@@ -61,7 +61,8 @@ func main() {
 		return
 	}
 	// 输出响应结果
-	fmt.Println(result)
+	responseText := result["choices"].([]interface{})[0].(map[string]interface{})["text"].(string)
+	fmt.Println(responseText)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
