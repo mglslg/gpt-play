@@ -10,8 +10,8 @@ import (
 
 func main() {
 	http.HandleFunc("/", handler)
-	fmt.Println("Web server is running on port 80")
-	http.ListenAndServe(":80", nil)
+	fmt.Println("Web server is running on port 8080")
+	http.ListenAndServe(":8080", nil)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
