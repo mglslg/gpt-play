@@ -17,7 +17,7 @@ func main123() {
 func main() {
 	// 设置OpenAI接口的URL和API密钥
 	url := "https://api.openai.com/v1/completions"
-	apikey := "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"
+	apikey := "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"
 	// 将请求数据封装成JSON字符串
 	data := map[string]interface{}{
 		"model":             "text-davinci-003",
