@@ -8,10 +8,60 @@ import (
 	"net/http"
 )
 
-func main() {
+func main123() {
 	http.HandleFunc("/", handler)
 	fmt.Println("Web server is running on port 8080")
 	http.ListenAndServe(":8080", nil)
+}
+
+func main() {
+	// 设置OpenAI接口的URL和API密钥
+	url := "https://api.openai.com/v1/completions"
+	apikey := "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"
+	// 将请求数据封装成JSON字符串
+	data := map[string]interface{}{
+		"model":             "text-davinci-003",
+		"prompt":            "你好你是谁\n\n你好，我是一个朋友。",
+		"temperature":       0.7,
+		"max_tokens":        256,
+		"top_p":             1,
+		"frequency_penalty": 0,
+		"presence_penalty":  0,
+	}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		fmt.Println("json.Marshal error:", err)
+		return
+	}
+	// 创建新的HTTP请求
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		fmt.Println("http.NewRequest error:", err)
+		return
+	}
+	// 设置Authorization请求头部和Content-Type
+	req.Header.Set("Authorization", "Bearer "+apikey)
+	req.Header.Set("Content-Type", "application/json")
+	// 发送HTTP请求
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Println("http.DefaultClient.Do error:", err)
+		return
+	}
+	defer resp.Body.Close()
+	// 读取响应数据并解析为JSON格式
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("ioutil.ReadAll error:", err)
+		return
+	}
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		fmt.Println("json.Unmarshal error:", err)
+		return
+	}
+	// 输出响应结果
+	fmt.Println(result)
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
