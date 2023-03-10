@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-func main() {
+func main1() {
 	mux := http.NewServeMux()
 
 	// 将 "/gpt-play" 注册为全局服务路径
