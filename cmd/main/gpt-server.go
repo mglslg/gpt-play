@@ -139,6 +139,8 @@ func callChatGPT(msg string) (string, error) {
 		return "", err
 	}
 
+	log.Println(body)
+
 	chatGPTData := ChatGPTResponse{}
 	err = json.Unmarshal(body, &chatGPTData)
 	if err != nil {
