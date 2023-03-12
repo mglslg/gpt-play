@@ -65,7 +65,7 @@ func Start() {
 }
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
-	ChatGPTResponse, err := callChatGPT("锄禾日当午")
+	ChatGPTResponse, err := callChatGPT("默写锄禾日当午")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
