@@ -55,21 +55,31 @@ func ReadConfig() error {
 }
 
 func Start() {
-	http.HandleFunc("/chat", messageHandler)
-	fmt.Println("Web server is running on port 8080")
-	err := http.ListenAndServe(":8080", nil)
+	// 创建 ServeMux 实例
+	mux := http.NewServeMux()
+
+	// 注册路由及其对应的处理程序
+	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintf(w, "Hello, World!")
+	})
+
+	mux.HandleFunc("/chat", messageHandler)
+
+	fmt.Println("Server listening on :8080")
+	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
-		log.Print(err.Error())
 		return
 	}
 }
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Println("lalala")
 	ChatGPTResponse, err := callChatGPT("默写锄禾日当午")
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
+	fmt.Println(ChatGPTResponse)
 	log.Print(ChatGPTResponse)
 }
 
@@ -96,14 +106,14 @@ type ChatGPTResponse struct {
 func callChatGPT(msg string) (string, error) {
 	api := "https://api.openai.com/v1/chat/completions"
 	body := []byte(`{
-		"model": "gpt-3.5-turbo",
-		"messages": [
-		  {
-			"role": "user",
-			"content": "` + JSONEscape(msg) + `"
-		  }
-		]
-	  }`)
+  		"model": "text-davinci-003",
+  		"prompt": "` + msg + `",
+  		"temperature": 0.7,
+  		"max_tokens": 256,
+		"top_p": 1,
+  		"frequency_penalty": 0,
+  		"presence_penalty": 0
+	}`)
 
 	req, err := http.NewRequest("POST", api, bytes.NewBuffer(body))
 	if err != nil {
