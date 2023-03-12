@@ -60,6 +60,7 @@ func Start() {
 
 	// 注册路由及其对应的处理程序
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Hello, World!")
 		fmt.Fprintf(w, "Hello, World!")
 	})
 
@@ -73,9 +74,9 @@ func Start() {
 }
 
 func messageHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("lalala")
 	ChatGPTResponse, err := callChatGPT("默写锄禾日当午")
 	if err != nil {
+		log.Println(err.Error())
 		fmt.Println(err.Error())
 		return
 	}
