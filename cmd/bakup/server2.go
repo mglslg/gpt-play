@@ -1,17 +1,22 @@
-// Package main
-package main
+package bakup
+
+import (
+	"fmt"
+	"gopkg.in/yaml.v2"
+	"io/ioutil"
+	"log"
+	"path/filepath"
+)
 
 //皓哥写的代码,瑞思拜
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
+	"github.com/bwmarrin/discordgo"
 	"net/http"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"syscall"
 )
 
 // Token is the token for the discord bot and chatgpt
@@ -54,23 +59,74 @@ func ReadConfig() error {
 
 }
 
+// Start starts the bot
 func Start() {
-	http.HandleFunc("/chat", messageHandler)
-	fmt.Println("Web server is running on port 8080")
-	err := http.ListenAndServe(":8080", nil)
+	dg, err := discordgo.New("Bot " + token.Discord)
+
 	if err != nil {
-		log.Print(err.Error())
+		fmt.Println("error creating Discord session,", err)
 		return
 	}
+
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(messageHandler)
+
+	// In this example, we only care about receiving message events.
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	err = dg.Open()
+
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	select {
+	case <-done:
+		fmt.Println("Received the exit signal, exiting...")
+	}
+	// Cleanly close down the Discord session.
+	fmt.Println("Closing Discord session...")
+	dg.Close()
+
 }
 
-func messageHandler(w http.ResponseWriter, r *http.Request) {
-	ChatGPTResponse, err := callChatGPT("锄禾日当午")
-	if err != nil {
-		fmt.Println(err.Error())
+func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	log.Print(ChatGPTResponse)
+
+	// Ignore all messages that don't mention the bot
+	mentiond := false
+	for _, u := range m.Mentions {
+		if u.ID == s.State.User.ID {
+			mentiond = true
+			break
+		}
+	}
+	if !mentiond {
+		fmt.Printf("Not mentioned in message: [%s] %s\n", m.Author.Username, m.Content)
+		return
+	}
+
+	message := fmt.Sprintf("Message: %s, Author: %s", m.Content, m.Author.Username)
+
+	fmt.Println(message)
+	ChatGPTResponse, err := callChatGPT(m.Content)
+	if err != nil {
+		fmt.Println(err.Error())
+		s.ChannelMessageSend(m.ChannelID, err.Error())
+		return
+	}
+	//s.ChannelMessageSend(m.ChannelID, ChatGPTResponse)
+	s.ChannelMessageSendReply(m.ChannelID, ChatGPTResponse, m.Reference())
+
 }
 
 // ChatGPTResponse is the response from the chatgpt api
