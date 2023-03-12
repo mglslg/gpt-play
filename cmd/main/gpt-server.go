@@ -1,121 +1,216 @@
+// Package main
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"net/http"
+	"log"
+	"path/filepath"
 )
 
-func main123() {
-	http.HandleFunc("/", handler)
-	fmt.Println("Web server is running on port 8080")
-	http.ListenAndServe(":8080", nil)
+//皓哥写的代码,瑞思拜
+import (
+	"bytes"
+	"encoding/json"
+	"github.com/bwmarrin/discordgo"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
+)
+
+// Token is the token for the discord bot and chatgpt
+type Token struct {
+	Discord string `yaml:"discord"`
+	ChatGPT string `yaml:"chatgpt"`
+}
+
+var token Token
+
+// ReadConfig reads the config file and unmarshals it into the config variable
+func ReadConfig() error {
+	fmt.Println("Reading config file...")
+
+	configFilePath := "config/config.yaml"
+	workingDir, err := os.Getwd()
+	if err != nil {
+		log.Fatal(err)
+	}
+	file, err := ioutil.ReadFile(filepath.Join(workingDir, configFilePath))
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	err = yaml.Unmarshal(file, &token)
+
+	if err != nil {
+		fmt.Println(err.Error())
+		return err
+	}
+
+	fmt.Println("Config file read successfully!")
+
+	return nil
+
+}
+
+// Start starts the bot
+func Start() {
+	dg, err := discordgo.New("Bot " + token.Discord)
+
+	if err != nil {
+		fmt.Println("error creating Discord session,", err)
+		return
+	}
+
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(messageHandler)
+
+	// In this example, we only care about receiving message events.
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	err = dg.Open()
+
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	select {
+	case <-done:
+		fmt.Println("Received the exit signal, exiting...")
+	}
+	// Cleanly close down the Discord session.
+	fmt.Println("Closing Discord session...")
+	dg.Close()
+
+}
+
+func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+
+	// Ignore all messages that don't mention the bot
+	mentiond := false
+	for _, u := range m.Mentions {
+		if u.ID == s.State.User.ID {
+			mentiond = true
+			break
+		}
+	}
+	if !mentiond {
+		fmt.Printf("Not mentioned in message: [%s] %s\n", m.Author.Username, m.Content)
+		return
+	}
+
+	message := fmt.Sprintf("Message: %s, Author: %s", m.Content, m.Author.Username)
+
+	fmt.Println(message)
+	ChatGPTResponse, err := callChatGPT(m.Content)
+	if err != nil {
+		fmt.Println(err.Error())
+		s.ChannelMessageSend(m.ChannelID, err.Error())
+		return
+	}
+	//s.ChannelMessageSend(m.ChannelID, ChatGPTResponse)
+	s.ChannelMessageSendReply(m.ChannelID, ChatGPTResponse, m.Reference())
+
+}
+
+// ChatGPTResponse is the response from the chatgpt api
+type ChatGPTResponse struct {
+	ID     string `json:"id"`
+	Object string `json:"object"`
+	Model  string `json:"model"`
+	Usage  struct {
+		PromptTokens     int `json:"prompt_tokens"`
+		CompletionTokens int `json:"completion_tokens"`
+		TotalTokens      int `json:"total_tokens"`
+	} `json:"usage"`
+	Choices []struct {
+		Index   int `json:"index"`
+		Message struct {
+			Role    string `json:"role"`
+			Content string `json:"content"`
+		} `json:"message"`
+		FinishReason string `json:"finish_reason"`
+	} `json:"choices"`
+}
+
+func callChatGPT(msg string) (string, error) {
+	api := "https://api.openai.com/v1/chat/completions"
+	body := []byte(`{
+		"model": "gpt-3.5-turbo",
+		"messages": [
+		  {
+			"role": "user",
+			"content": "` + JSONEscape(msg) + `"
+		  }
+		]
+	  }`)
+
+	req, err := http.NewRequest("POST", api, bytes.NewBuffer(body))
+	if err != nil {
+		fmt.Println("Error creating request", err)
+		return "", err
+	}
+
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token.ChatGPT)
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println("Error sending request", err)
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	body, err = ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Println("Error reading response", err)
+		return "", err
+	}
+
+	chatGPTData := ChatGPTResponse{}
+	err = json.Unmarshal(body, &chatGPTData)
+	if err != nil {
+		fmt.Println("Error unmarshalling response", err)
+		return "", err
+	}
+	return chatGPTData.Choices[0].Message.Content, nil
+}
+
+// JSONEscape escape the string
+func JSONEscape(str string) string {
+	b, err := json.Marshal(str)
+	if err != nil {
+		return str
+	}
+	s := string(b)
+	return s[1 : len(s)-1]
 }
 
 func main() {
-	// 设置OpenAI接口的URL和API密钥
-	url := "https://api.openai.com/v1/completions"
-	apikey := "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"
-	// 将请求数据封装成JSON字符串
-	data := map[string]interface{}{
-		"model":             "text-davinci-003",
-		"prompt":            "你好你是谁\n\n你好，我是一个朋友。",
-		"temperature":       0.7,
-		"max_tokens":        256,
-		"top_p":             1,
-		"frequency_penalty": 0,
-		"presence_penalty":  0,
-	}
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		fmt.Println("json.Marshal error:", err)
-		return
-	}
-	// 创建新的HTTP请求
-	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
-	if err != nil {
-		fmt.Println("http.NewRequest error:", err)
-		return
-	}
-	// 设置Authorization请求头部和Content-Type
-	req.Header.Set("Authorization", "Bearer "+apikey)
-	req.Header.Set("Content-Type", "application/json")
-	// 发送HTTP请求
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		fmt.Println("http.DefaultClient.Do error:", err)
-		return
-	}
-	defer resp.Body.Close()
-	// 读取响应数据并解析为JSON格式
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Println("ioutil.ReadAll error:", err)
-		return
-	}
-	var result map[string]interface{}
-	if err := json.Unmarshal(body, &result); err != nil {
-		fmt.Println("json.Unmarshal error:", err)
-		return
-	}
-	// 输出响应结果
-	responseText := result["choices"].([]interface{})[0].(map[string]interface{})["text"].(string)
-	fmt.Println(responseText)
-}
+	err := ReadConfig()
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path == "/chat" {
-		// 从请求中获取用户咨询的内容
-		query := r.FormValue("q")
-		// 设置OpenAI接口的URL和API密钥
-		url := "https://api.openai.com/v1/completions"
-		apikey := "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"
-		// 将用户咨询的内容封装成JSON字符串
-		data := fmt.Sprintf(`{"prompt": "%s", "max_tokens": 1024, "temperature": 0.7}`, query)
-		// 创建新的HTTP请求
-		req, err := http.NewRequest("POST", url, bytes.NewBuffer([]byte(data)))
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// 设置Authorization请求头部
-		req.Header.Set("Authorization", "Bearer "+apikey)
-		req.Header.Set("Content-Type", "application/json")
-		// 发送HTTP请求
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		defer resp.Body.Close()
-		// 读取响应数据并解析为JSON格式
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		var result struct {
-			Choices []struct {
-				Text string `json:"text"`
-			} `json:"choices"`
-		}
-		if err := json.Unmarshal(body, &result); err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		// 将响应作为字符串返回给用户
-		response := result.Choices[0].Text
-
-		// 检查响应是否正确
-		if len(result.Choices) == 0 {
-			http.Error(w, "no response from OpenAI API", http.StatusInternalServerError)
-			return
-		}
-
-		fmt.Fprint(w, response)
-	} else {
-		fmt.Fprintf(w, "Hello, World!")
+	if err != nil {
+		fmt.Println(err.Error())
+		return
 	}
+
+	Start()
 }
