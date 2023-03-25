@@ -1,22 +1,18 @@
+// Package main
 package bakup
 
 import (
-	"fmt"
-	"gopkg.in/yaml.v2"
-	"io/ioutil"
-	"log"
-	"path/filepath"
-)
-
-//皓哥写的代码,瑞思拜
-import (
 	"bytes"
 	"encoding/json"
-	"github.com/bwmarrin/discordgo"
+	"fmt"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"gopkg.in/yaml.v3"
 )
 
 // Token is the token for the discord bot and chatgpt
@@ -30,16 +26,7 @@ var token Token
 // ReadConfig reads the config file and unmarshals it into the config variable
 func ReadConfig() error {
 	fmt.Println("Reading config file...")
-
-	configFilePath := "config/config.yaml"
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	file, err := ioutil.ReadFile(filepath.Join(workingDir, configFilePath))
-	if err != nil {
-		log.Fatal(err)
-	}
+	file, err := ioutil.ReadFile("/home/ubuntu/app/config/config.yaml")
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -203,7 +190,7 @@ func JSONEscape(str string) string {
 	return s[1 : len(s)-1]
 }
 
-func main() {
+func main111() {
 	err := ReadConfig()
 
 	if err != nil {
