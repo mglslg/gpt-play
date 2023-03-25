@@ -27,7 +27,8 @@ var token Token
 // ReadConfig reads the config file and unmarshals it into the config variable
 func ReadConfig() error {
 	fmt.Println("Reading config file...")
-	file, err := ioutil.ReadFile("/Users/suolongga/app/config/config.yaml")
+	//file, err := ioutil.ReadFile("/Users/suolongga/app/config/config.yaml")
+	file, err := ioutil.ReadFile("/app/config/config.yaml")
 
 	if err != nil {
 		fmt.Println(err.Error())
