@@ -102,8 +102,12 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 					return
 				}
 
-				response := fmt.Sprintf("%s", aiResp)
-				_, err := s.ChannelMessageSend(m.ChannelID, response)
+				// Mention the user who asked the question
+				userMention := m.Author.Mention()
+				msgContent := fmt.Sprintf("%s %s", userMention, aiResp)
+
+				_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
+
 				if err != nil {
 					fmt.Println("Error sending message:", err)
 				}
