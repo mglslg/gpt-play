@@ -1,17 +1,18 @@
 // Package main
 package main
 
-//皓哥写的代码,瑞思拜
 import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/yaml.v2"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"os"
-	"path/filepath"
+	"os/signal"
+	"syscall"
+
+	"github.com/bwmarrin/discordgo"
+	"gopkg.in/yaml.v3"
 )
 
 // Token is the token for the discord bot and chatgpt
@@ -25,16 +26,7 @@ var token Token
 // ReadConfig reads the config file and unmarshals it into the config variable
 func ReadConfig() error {
 	fmt.Println("Reading config file...")
-
-	configFilePath := "config/config.yaml"
-	workingDir, err := os.Getwd()
-	if err != nil {
-		log.Fatal(err)
-	}
-	file, err := ioutil.ReadFile(filepath.Join(workingDir, configFilePath))
-	if err != nil {
-		log.Fatal(err)
-	}
+	file, err := ioutil.ReadFile("/home/ubuntu/app/config/config.yaml")
 
 	if err != nil {
 		fmt.Println(err.Error())
@@ -54,34 +46,74 @@ func ReadConfig() error {
 
 }
 
+// Start starts the bot
 func Start() {
-	// 创建 ServeMux 实例
-	mux := http.NewServeMux()
+	dg, err := discordgo.New("Bot " + token.Discord)
 
-	// 注册路由及其对应的处理程序
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Hello, World!")
-		fmt.Fprintf(w, "Hello, World!")
-	})
-
-	mux.HandleFunc("/chat", messageHandler)
-
-	fmt.Println("Server listening on :8080")
-	err := http.ListenAndServe(":8080", mux)
 	if err != nil {
+		fmt.Println("error creating Discord session,", err)
 		return
 	}
+
+	// Register the messageCreate func as a callback for MessageCreate events.
+	dg.AddHandler(messageHandler)
+
+	// In this example, we only care about receiving message events.
+	dg.Identify.Intents = discordgo.IntentsGuildMessages
+
+	err = dg.Open()
+
+	if err != nil {
+		fmt.Println("error opening connection,", err)
+		return
+	}
+
+	// Wait here until CTRL-C or other term signal is received.
+	fmt.Println("Bot is now running.  Press CTRL-C to exit.")
+	done := make(chan os.Signal, 1)
+	signal.Notify(done, syscall.SIGINT, syscall.SIGTERM, os.Interrupt)
+	select {
+	case <-done:
+		fmt.Println("Received the exit signal, exiting...")
+	}
+	// Cleanly close down the Discord session.
+	fmt.Println("Closing Discord session...")
+	dg.Close()
+
 }
 
-func messageHandler(w http.ResponseWriter, r *http.Request) {
-	ChatGPTResponse, err := callChatGPT("默写锄禾日当午")
-	if err != nil {
-		log.Println(err.Error())
-		fmt.Println(err.Error())
+func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
 		return
 	}
-	fmt.Println(ChatGPTResponse)
-	log.Print(ChatGPTResponse)
+
+	// Ignore all messages that don't mention the bot
+	mentiond := false
+	for _, u := range m.Mentions {
+		if u.ID == s.State.User.ID {
+			mentiond = true
+			break
+		}
+	}
+	if !mentiond {
+		fmt.Printf("Not mentioned in message: [%s] %s\n", m.Author.Username, m.Content)
+		return
+	}
+
+	message := fmt.Sprintf("Message: %s, Author: %s", m.Content, m.Author.Username)
+
+	fmt.Println(message)
+	ChatGPTResponse, err := callChatGPT(m.Content)
+	if err != nil {
+		fmt.Println(err.Error())
+		s.ChannelMessageSend(m.ChannelID, err.Error())
+		return
+	}
+	//s.ChannelMessageSend(m.ChannelID, ChatGPTResponse)
+	s.ChannelMessageSendReply(m.ChannelID, ChatGPTResponse, m.Reference())
+
 }
 
 // ChatGPTResponse is the response from the chatgpt api
@@ -107,14 +139,14 @@ type ChatGPTResponse struct {
 func callChatGPT(msg string) (string, error) {
 	api := "https://api.openai.com/v1/chat/completions"
 	body := []byte(`{
-  		"model": "text-davinci-003",
-  		"prompt": "` + msg + `",
-  		"temperature": 0.7,
-  		"max_tokens": 256,
-		"top_p": 1,
-  		"frequency_penalty": 0,
-  		"presence_penalty": 0
-	}`)
+		"model": "gpt-3.5-turbo",
+		"messages": [
+		  {
+			"role": "user",
+			"content": "` + JSONEscape(msg) + `"
+		  }
+		]
+	  }`)
 
 	req, err := http.NewRequest("POST", api, bytes.NewBuffer(body))
 	if err != nil {
@@ -138,8 +170,6 @@ func callChatGPT(msg string) (string, error) {
 		fmt.Println("Error reading response", err)
 		return "", err
 	}
-
-	log.Println(body)
 
 	chatGPTData := ChatGPTResponse{}
 	err = json.Unmarshal(body, &chatGPTData)
