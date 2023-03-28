@@ -2,10 +2,7 @@ module github.com/mglslg/gpt-play
 
 go 1.18
 
-require (
-	github.com/bwmarrin/discordgo v0.27.1
-	gopkg.in/yaml.v2 v2.4.0
-)
+require github.com/bwmarrin/discordgo v0.27.1
 
 require (
 	github.com/gorilla/websocket v1.4.2 // indirect

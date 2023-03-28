@@ -12,6 +12,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -23,6 +24,10 @@ type Token struct {
 }
 
 var token Token
+
+// var channelID = "1084356914281992222" //测试频道
+var channelID = "1084356913816412195"
+var channelName = "gpt-play"
 
 // ReadConfig reads the config file and unmarshals it into the config variable
 func ReadConfig() error {
@@ -55,14 +60,20 @@ func main() {
 		fmt.Println(err.Error())
 		return
 	}
-
 	dg, err := discordgo.New("Bot " + token.Discord)
+
+	//intents := discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages | discordgo.IntentsMessageContent
+	intents := discordgo.IntentsAllWithoutPrivileged
+	dg.Identify.Intents = intents
+
 	if err != nil {
 		fmt.Println("Error creating Discord session:", err)
 		return
 	}
 
 	dg.AddHandler(messageCreate)
+
+	//printChannelMsg(dg)
 
 	err = dg.Open()
 	if err != nil {
@@ -78,6 +89,63 @@ func main() {
 	dg.Close()
 }
 
+func printChannelMsg(dg *discordgo.Session) {
+	startDate := time.Now().AddDate(0, 0, -1) // 1 day ago
+	endDate := time.Now()
+
+	messages, err := fetchMessagesInTimeRange(dg, channelID, startDate, endDate)
+	if err != nil {
+		fmt.Println("Error fetching messages: ", err)
+		return
+	}
+
+	for _, message := range messages {
+		fmt.Printf("%s: %s\n", message.Author.Username, message.Content)
+	}
+}
+
+func fetchMessagesInTimeRange(s *discordgo.Session, channelID string, startDate, endDate time.Time) ([]*discordgo.Message, error) {
+	var messages []*discordgo.Message
+
+	msgs, err := s.ChannelMessages(channelID, 100, "", "", "")
+
+	if err != nil {
+		fmt.Println("Error fetching channel messages: ", err)
+		return messages, err
+	}
+
+	for _, msg := range msgs {
+		msgTime := msg.Timestamp
+		if msgTime.After(startDate) && msgTime.Before(endDate) {
+
+			//messages = append(messages, msg)
+
+			if msg.Content != "" {
+				fmt.Printf("%s: %s\n", msg.Author.Username, msg.Content)
+			}
+
+			// 打印附件
+			for _, attachment := range msg.Attachments {
+				fmt.Printf("  [Attachment] %s: %s\n", attachment.Filename, attachment.URL)
+			}
+
+			// 打印嵌入内容
+			for _, embed := range msg.Embeds {
+				fmt.Printf("  [Embed] Title: %s, Description: %s, URL: %s\n", embed.Title, embed.Description, embed.URL)
+			}
+
+			// 打印自定义表情
+			for _, reaction := range msg.Reactions {
+				fmt.Printf("  [Reaction] Emoji: %s, Count: %d\n", reaction.Emoji.Name, reaction.Count)
+			}
+		} else if msgTime.Before(startDate) {
+			return messages, nil
+		}
+	}
+
+	return messages, nil
+}
+
 func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.ID == s.State.User.ID {
 		return
@@ -89,7 +157,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if channel.Name == "gpt-play" && m.Mentions != nil {
+	if channel.Name == channelName && m.Mentions != nil {
 		for _, user := range m.Mentions {
 			if user.ID == s.State.User.ID {
 				mention := s.State.User.Mention()
