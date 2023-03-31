@@ -5,16 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="42ec4f12-24b3-424d-9c2e-f5b252070b77" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/gpt-play.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/bakup/codebak.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/ds/Stack.go" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/cmd/mygpt/api_sdk.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/bakup/gpt-server.go" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/discord-bot.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/discord-bot.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -140,7 +132,8 @@
     <MESSAGE value="discord chat bot" />
     <MESSAGE value="增加At回复" />
     <MESSAGE value="获取聊天记录" />
-    <option name="LAST_COMMIT_MESSAGE" value="获取聊天记录" />
+    <MESSAGE value="上下文" />
+    <option name="LAST_COMMIT_MESSAGE" value="上下文" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>

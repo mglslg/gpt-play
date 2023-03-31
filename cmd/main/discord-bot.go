@@ -26,15 +26,15 @@ type Token struct {
 
 var token Token
 
-var channelID = "1084356914281992222" //测试频道
-// var channelID = "1084356913816412195"
+// var channelID = "1084356914281992222" //测试频道
+var channelID = "1084356913816412195"
 var discordBotId = ""
 
 var logger *log.Logger
 
-var home = "/Users/suolongga/app"
+//var home = "/Users/suolongga/app"
 
-//var home = "/app"
+var home = "/app"
 
 func main() {
 	// 初始化日志记录器并获取日志文件的引用
