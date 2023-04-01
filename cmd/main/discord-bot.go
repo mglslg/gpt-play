@@ -147,8 +147,6 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID)
-
 	if m.Author.ID == conf.DiscordBotID {
 		return
 	}
@@ -158,6 +156,8 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logger.Fatal("Error getting channel info:", err)
 		return
 	}
+
+	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID, ",channelId:"+channel.ID)
 
 	if channel.ID == conf.ChannelID && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
