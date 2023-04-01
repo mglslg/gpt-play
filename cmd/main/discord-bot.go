@@ -26,8 +26,8 @@ var conf = ds.GlobalConfig{
 	GuildID:       "1084356913816412190",
 	ChannelID:     "1084356913816412195",
 	//ChannelID:     "1084356914281992222", //测试频道
-	//Home: "/app",
-	Home:     "/Users/suolongga/app",
+	Home: "/app",
+	//Home:     "/Users/suolongga/app",
 	ClearCmd: "哎呀我的老天爷……我好像失忆了……",
 }
 
