@@ -157,7 +157,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID, ",channelId:"+channel.ID)
+	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID, ",channelId:"+channel.ID, ",mentionLenth:", len(m.Mentions))
 
 	if channel.ID == conf.ChannelID && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
