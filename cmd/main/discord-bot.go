@@ -16,6 +16,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 )
 
 // Token is the token for the discord bot and chatgpt
@@ -26,34 +27,30 @@ type Token struct {
 
 var token Token
 
+var applicationID = "1084372136812089414"
+var guildID = "1084356913816412190" //公会ID(聊天室ID)
+
 // var channelID = "1084356914281992222" //测试频道
 var channelID = "1084356913816412195"
 var discordBotId = ""
 
 var logger *log.Logger
 
-//var home = "/Users/suolongga/app"
+var home = "/Users/suolongga/app"
 
-var home = "/app"
+//var home = "/app"
 
 func main() {
-	// 初始化日志记录器并获取日志文件的引用
+
 	logFile := initLogger()
 
 	readConfig()
 
-	session, err := discordgo.New("Bot " + token.Discord)
-
-	//intents := discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages | discordgo.IntentsMessageContent
-	intents := discordgo.IntentsAllWithoutPrivileged
-	session.Identify.Intents = intents
-
+	session, err := initDiscordSession()
 	if err != nil {
-		logger.Fatal("Error creating Discord session:", err)
+		logger.Fatal("Error init discord session:", err)
 		return
 	}
-
-	session.AddHandler(onMsgCreate)
 
 	err = session.Open()
 	if err != nil {
@@ -73,9 +70,41 @@ func main() {
 	defer logFile.Close()
 }
 
+func initDiscordSession() (*discordgo.Session, error) {
+	session, err := discordgo.New("Bot " + token.Discord)
+	if err != nil {
+		logger.Fatal("Error creating Discord session:", err)
+		return nil, err
+	}
+
+	//设置机器人权限
+	//intents := discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages | discordgo.IntentsMessageContent
+	intents := discordgo.IntentsAllWithoutPrivileged
+	session.Identify.Intents = intents
+
+	//创建slash命令
+	_, cmdErr := session.ApplicationCommandCreate(applicationID, guildID, &discordgo.ApplicationCommand{
+		Name:        "一忘皆空",
+		Description: "清除与gpt机器人的聊天上下文",
+	})
+	if cmdErr != nil {
+		logger.Fatal("create discord command error", cmdErr)
+		return nil, cmdErr
+	}
+	session.AddHandler(onSlashCmd)
+
+	//监听消息
+	session.AddHandler(onMsgCreate)
+
+	return session, nil
+}
+
 func initLogger() *os.File {
+	currentDate := time.Now().Format("2006-01-02")
+	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", home, currentDate)
+
 	// 创建一个日志文件
-	f, err := os.OpenFile(home+"/deploy/logs/app.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 
 	if err != nil {
 		log.Fatal(err)
@@ -104,6 +133,27 @@ func readConfig() {
 	}
 
 	fmt.Println("Config file read successfully!")
+}
+
+func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	if i.ApplicationCommandData().Name == "一忘皆空" {
+		//清除聊天上下文
+		clearErr := clearConversation(s)
+		if clearErr != nil {
+			logger.Fatal("清除上下文失败", clearErr)
+		}
+
+		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "啊天哪……我好像失忆了……",
+			},
+		})
+
+		if err != nil {
+			fmt.Println("Error responding to slash command: ", err)
+		}
+	}
 }
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
@@ -155,6 +205,11 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+func clearConversation(s *discordgo.Session) error {
+
+	return nil
+}
+
 func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
@@ -201,8 +256,10 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 }
 
 func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error) {
-	messages := make([]map[string]string, 0)
-	for i := 0; i < msgStack.Size(); i++ {
+
+	messages := make([]ds.ChatMessage, 0)
+
+	for !msgStack.IsEmpty() {
 		msg, _ := msgStack.Pop()
 
 		role := "user"
@@ -210,15 +267,15 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 			role = "system"
 		}
 
-		messages = append(messages, map[string]string{
-			"role":    role,
-			"content": msg.Content,
+		messages = append(messages, ds.ChatMessage{
+			Role:    role,
+			Content: msg.Content,
 		})
 	}
 
-	messages = append(messages, map[string]string{
-		"role":    "user",
-		"content": msg,
+	messages = append(messages, ds.ChatMessage{
+		Role:    "user",
+		Content: msg,
 	})
 
 	logger.Println("================", currUser, "================")

@@ -32,3 +32,10 @@ func (s *Stack) Pop() (*discordgo.Message, error) {
 func (s *Stack) Size() int {
 	return len(s.elements)
 }
+
+func (s *Stack) IsEmpty() bool {
+	if s.Size() == 0 {
+		return true
+	}
+	return false
+}
