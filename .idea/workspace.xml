@@ -5,6 +5,9 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="42ec4f12-24b3-424d-9c2e-f5b252070b77" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/cmd/ds/GlobalConfig.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/cmd/ds/Token.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/discord-bot.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/discord-bot.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -27,7 +30,11 @@
     <option name="GO_FMT" value="false" />
   </component>
   <component name="HighlightingSettingsPerFile">
+    <setting file="file:///usr/local/go/bin/pkg/mod/github.com/bwmarrin/discordgo@v0.27.1/discord.go" root0="SKIP_INSPECTION" />
+    <setting file="file:///usr/local/go/bin/pkg/mod/github.com/bwmarrin/discordgo@v0.27.1/event.go" root0="SKIP_INSPECTION" />
+    <setting file="file:///usr/local/go/bin/pkg/mod/github.com/bwmarrin/discordgo@v0.27.1/eventhandlers.go" root0="SKIP_INSPECTION" />
     <setting file="file:///usr/local/go/src/net/http/server.go" root0="SKIP_INSPECTION" />
+    <setting file="file:///usr/local/go/src/runtime/asm_amd64.s" root0="SKIP_INSPECTION" />
   </component>
   <component name="MarkdownSettingsMigration">
     <option name="stateVersion" value="1" />
@@ -53,7 +60,7 @@
     "last_opened_file_path": "/Users/suolongga/GolandProjects/gpt-play/cmd/main",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
-    "settings.editor.selected.configurable": "http.proxy"
+    "settings.editor.selected.configurable": "reference.settingsdialog.IDE.editor.colors"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -136,5 +143,12 @@
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <default-breakpoints>
+        <breakpoint type="DlvErrorBreakpoint" />
+      </default-breakpoints>
+    </breakpoint-manager>
   </component>
 </project>

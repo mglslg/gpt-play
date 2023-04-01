@@ -19,25 +19,17 @@ import (
 	"time"
 )
 
-// Token is the token for the discord bot and chatgpt
-type Token struct {
-	Discord string `yaml:"discord"`
-	ChatGPT string `yaml:"chatgpt"`
-}
-
-var token Token
-
-var applicationID = "1084372136812089414"
-var guildID = "1084356913816412190" //公会ID(聊天室ID)
-
-// var channelID = "1084356914281992222" //测试频道
-var channelID = "1084356913816412195"
-var discordBotId = ""
-
 var logger *log.Logger
 
-// var home = "/Users/suolongga/app"
-var home = "/app"
+var conf = ds.GlobalConfig{
+	ApplicationID: "1084372136812089414",
+	GuildID:       "1084356913816412190",
+	ChannelID:     "1084356913816412195",
+	//ChannelID:     "1084356914281992222", //测试频道
+	//Home: "/app",
+	Home:     "/Users/suolongga/app",
+	ClearCmd: "哎呀我的老天爷……我好像失忆了……",
+}
 
 func main() {
 
@@ -57,7 +49,7 @@ func main() {
 		return
 	}
 
-	discordBotId = session.State.User.ID
+	conf.DiscordBotID = session.State.User.ID
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -70,7 +62,7 @@ func main() {
 }
 
 func initDiscordSession() (*discordgo.Session, error) {
-	session, err := discordgo.New("Bot " + token.Discord)
+	session, err := discordgo.New("Bot " + conf.Token.Discord)
 	if err != nil {
 		logger.Fatal("Error creating Discord session:", err)
 		return nil, err
@@ -82,7 +74,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	session.Identify.Intents = intents
 
 	//创建slash命令
-	_, cmdErr := session.ApplicationCommandCreate(applicationID, guildID, &discordgo.ApplicationCommand{
+	_, cmdErr := session.ApplicationCommandCreate(conf.ApplicationID, conf.GuildID, &discordgo.ApplicationCommand{
 		Name:        "一忘皆空",
 		Description: "清除与gpt机器人的聊天上下文",
 	})
@@ -100,7 +92,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 
 func initLogger() *os.File {
 	currentDate := time.Now().Format("2006-01-02")
-	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", home, currentDate)
+	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", conf.Home, currentDate)
 
 	// 创建一个日志文件
 	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -119,13 +111,13 @@ func initLogger() *os.File {
 func readConfig() {
 	fmt.Println("Reading config file...")
 
-	file, err := ioutil.ReadFile(home + "/config/config.yaml")
+	file, err := ioutil.ReadFile(conf.Home + "/config/config.yaml")
 
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	err = yaml.Unmarshal(file, &token)
+	err = yaml.Unmarshal(file, &conf.Token)
 
 	if err != nil {
 		logger.Fatal(err.Error())
@@ -136,16 +128,15 @@ func readConfig() {
 
 func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.ApplicationCommandData().Name == "一忘皆空" {
-		//清除聊天上下文
-		clearErr := clearConversation(s)
-		if clearErr != nil {
-			logger.Fatal("清除上下文失败", clearErr)
-		}
+		//清除聊天上下文(实际上就是打印一句话,后面取聊天记录时按照它作分隔)
+
+		userMention := i.Member.User.Mention()
+		replyContent := fmt.Sprintf("%s %s", userMention, conf.ClearCmd)
 
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
 			Data: &discordgo.InteractionResponseData{
-				Content: "啊天哪……我好像失忆了……",
+				Content: replyContent,
 			},
 		})
 
@@ -156,9 +147,11 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
-	if m.Author.ID == discordBotId {
+	if m.Author.ID == conf.DiscordBotID {
 		return
 	}
+
+	fmt.Println(m.Content)
 
 	channel, err := s.Channel(m.ChannelID)
 	if err != nil {
@@ -166,17 +159,17 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if channel.ID == channelID && m.Mentions != nil {
+	if channel.ID == conf.ChannelID && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 
-			logger.Println("discordBotId:", discordBotId+",mentioned.ID:", mentioned.ID, "m.Author.Mention()", m.Author.Mention())
+			logger.Println("discordBotId:", conf.DiscordBotID+",mentioned.ID:", mentioned.ID, "m.Author.Mention()", m.Author.Mention())
 
-			if mentioned.ID == discordBotId {
+			if mentioned.ID == conf.DiscordBotID {
 				mention := s.State.User.Mention()
 				cleanContent := strings.Replace(m.Content, mention, "", 1)
 				cleanContent = strings.TrimSpace(cleanContent)
 
-				allMsg, e := fetchMessagesByCount(s, channelID, 30)
+				allMsg, e := fetchMessagesByCount(s, conf.ChannelID, 30)
 				if e != nil {
 					logger.Fatal("抓取聊天记录失败", err)
 				}
@@ -204,17 +197,16 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
-func clearConversation(s *discordgo.Session) error {
-
-	return nil
-}
-
 func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
 			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
-			if (msg.Author.ID == discordBotId && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == discordBotId) {
+			if (msg.Author.ID == conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == conf.DiscordBotID) {
+				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
+				if strings.Contains(msg.Content, conf.ClearCmd) {
+					return msgStack
+				}
 				msgStack.Push(msg)
 			}
 		}
@@ -262,7 +254,7 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 		msg, _ := msgStack.Pop()
 
 		role := "user"
-		if msg.Author.ID == discordBotId {
+		if msg.Author.ID == conf.DiscordBotID {
 			role = "system"
 		}
 
@@ -297,7 +289,7 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+token.ChatGPT)
+	req.Header.Set("Authorization", "Bearer "+conf.Token.ChatGPT)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
