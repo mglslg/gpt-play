@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -147,44 +148,34 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	//如果是机器人发的消息则不予理睬
 	if m.Author.ID == conf.DiscordBotID {
 		return
 	}
 
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		logger.Fatal("Error getting channel info:", err)
-		return
-	}
+	logger.Println("onMsgCreate:", "mentions:", m.Mentions)
 
-	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID, ",channelId:"+channel.ID, ",mentionLenth:", len(m.Mentions))
-
-	if channel.ID == conf.ChannelID && m.Mentions != nil {
+	if m.ChannelID == conf.ChannelID && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 
-			logger.Println("discordBotId:", conf.DiscordBotID+",mentioned.ID:", mentioned.ID, "m.Author.Mention()", m.Author.Mention())
+			logger.Println("discordBotId:", conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 
 			if mentioned.ID == conf.DiscordBotID {
-				mention := s.State.User.Mention()
-				cleanContent := strings.Replace(m.Content, mention, "", 1)
-				cleanContent = strings.TrimSpace(cleanContent)
-
 				allMsg, e := fetchMessagesByCount(s, conf.ChannelID, 30)
 				if e != nil {
-					logger.Fatal("抓取聊天记录失败", err)
+					logger.Fatal("抓取聊天记录失败", e)
 				}
 
 				conversation := getUserConversation(allMsg, m.Author.ID)
 
-				aiResp, aiErr := callOpenAI(cleanContent, conversation, m.Author.Username)
+				aiResp, aiErr := callOpenAI(getCleanMsg(m.Content), conversation, m.Author.Username)
 				if aiErr != nil {
-					logger.Fatal("Error getting response from OpenAI:", err)
+					logger.Fatal("Error getting response from OpenAI:", aiErr)
 					return
 				}
 
 				// Mention the user who asked the question
-				userMention := m.Author.Mention()
-				msgContent := fmt.Sprintf("%s %s", userMention, aiResp)
+				msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), aiResp)
 
 				_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
 
@@ -195,6 +186,16 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		}
 	}
+}
+
+func getCleanMsg(content string) string {
+	// 创建一个正则表达式，用于匹配尖括号及其内容，格式为：<@数字>
+	re := regexp.MustCompile(`<@(\d+)>`)
+
+	// 使用正则表达式替换匹配的内容为空字符串
+	cleanedMsg := re.ReplaceAllString(content, "")
+
+	return cleanedMsg
 }
 
 func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.Stack {
@@ -260,14 +261,14 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 		messages = append(messages, ds.ChatMessage{
 			Role:    role,
-			Content: msg.Content,
+			Content: getCleanMsg(msg.Content),
 		})
 	}
 
-	messages = append(messages, ds.ChatMessage{
-		Role:    "user",
-		Content: msg,
-	})
+	//messages = append(messages, ds.ChatMessage{
+	//	Role:    "user",
+	//	Content: msg,
+	//})
 
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
