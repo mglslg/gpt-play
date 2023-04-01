@@ -272,7 +272,7 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
-		logger.Println(getCleanMsg(m.Content))
+		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
 
