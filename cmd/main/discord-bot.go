@@ -36,9 +36,8 @@ var discordBotId = ""
 
 var logger *log.Logger
 
-var home = "/Users/suolongga/app"
-
-//var home = "/app"
+// var home = "/Users/suolongga/app"
+var home = "/app"
 
 func main() {
 
