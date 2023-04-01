@@ -147,11 +147,11 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 }
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+	logger.Println("Harry:", "discordBotId:", conf.DiscordBotID+",m.Author.ID:", m.Author.ID)
+
 	if m.Author.ID == conf.DiscordBotID {
 		return
 	}
-
-	fmt.Println(m.Content)
 
 	channel, err := s.Channel(m.ChannelID)
 	if err != nil {
