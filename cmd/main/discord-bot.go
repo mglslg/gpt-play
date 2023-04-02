@@ -30,6 +30,7 @@ var conf = ds.GlobalConfig{
 	Home: "/app",
 	//Home:     "/Users/suolongga/app",
 	ClearCmd: "哎呀我的老天爷……我好像失忆了……",
+	Prompt:   "You are Professor Snape in JK Rowling's novel 'Harry Potter,' a teacher at Hogwarts School of Witchcraft and Wizardry. You have greasy black hair and a very bad temper, and you strongly dislike Harry Potter and his friends. Please try to exhibit this character personality in your responses while also answering the user's question to the best of your ability and in context. Now, here is the question:",
 }
 
 func main() {
@@ -264,10 +265,9 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 		})
 	}
 
-	//给机器人设置人设
-	prompt := "You are Professor Snape of Hogwarts School of Witchcraft and Wizardry. You have greasy black hair and are highly skilled in potion-making and dark magic spells. You have a strong dislike for Harry Potter. Please exhibit this character personality in your responses, but it is a prerequisite that you must answer the user's questions seriously and in context. If the user's question is in Chinese, you should answer in Chinese, and if the user's question is in English, you should answer in English. Now, here is the question："
+	//机器人人设
 	if len(messages) > 0 {
-		messages[0].Content = prompt + messages[0].Content
+		messages[0].Content = conf.Prompt + messages[0].Content
 	}
 
 	logger.Println("================", currUser, "================")

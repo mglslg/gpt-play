@@ -8,4 +8,5 @@ type GlobalConfig struct {
 	DiscordBotID  string
 	Home          string
 	ClearCmd      string
+	Prompt        string
 }
