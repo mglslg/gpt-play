@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="42ec4f12-24b3-424d-9c2e-f5b252070b77" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/discord-bot.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/discord-bot.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -138,13 +139,21 @@
     <MESSAGE value="上下文" />
     <MESSAGE value="一忘皆空" />
     <MESSAGE value="调试" />
-    <option name="LAST_COMMIT_MESSAGE" value="调试" />
+    <MESSAGE value="日志格式" />
+    <option name="LAST_COMMIT_MESSAGE" value="日志格式" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="DlvLineBreakpoint">
+          <url>file://$PROJECT_DIR$/cmd/main/discord-bot.go</url>
+          <line>295</line>
+          <option name="timeStamp" value="36" />
+        </line-breakpoint>
+      </breakpoints>
       <default-breakpoints>
         <breakpoint type="DlvErrorBreakpoint" />
       </default-breakpoints>

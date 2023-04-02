@@ -248,7 +248,6 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 }
 
 func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error) {
-
 	messages := make([]ds.ChatMessage, 0)
 
 	for !msgStack.IsEmpty() {
@@ -265,10 +264,11 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 		})
 	}
 
-	//messages = append(messages, ds.ChatMessage{
-	//	Role:    "user",
-	//	Content: msg,
-	//})
+	//给机器人设置人设
+	prompt := "You are Professor Snape of Hogwarts School of Witchcraft and Wizardry. You have greasy black hair and are highly skilled in potion-making and dark magic spells. You have a strong dislike for Harry Potter. Please exhibit this character personality in your responses, but it is a prerequisite that you must answer the user's questions seriously and in context. If the user's question is in Chinese, you should answer in Chinese, and if the user's question is in English, you should answer in English. Now, here is the question："
+	if len(messages) > 0 {
+		messages[0].Content = prompt + messages[0].Content
+	}
 
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
