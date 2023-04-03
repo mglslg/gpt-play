@@ -162,7 +162,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			logger.Println("discordBotId:", conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 
 			if mentioned.ID == conf.DiscordBotID {
-				allMsg, e := fetchMessagesByCount(s, conf.ChannelID, 30)
+				allMsg, e := fetchMessagesByCount(s, conf.ChannelID, 50)
 				if e != nil {
 					logger.Fatal("抓取聊天记录失败", e)
 				}

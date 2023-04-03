@@ -5,6 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="42ec4f12-24b3-424d-9c2e-f5b252070b77" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/cmd/main/discord-bot.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/main/discord-bot.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -141,7 +142,8 @@
     <MESSAGE value="日志格式" />
     <MESSAGE value="斯内普人设" />
     <MESSAGE value="调整temperature" />
-    <option name="LAST_COMMIT_MESSAGE" value="调整temperature" />
+    <MESSAGE value="人设" />
+    <option name="LAST_COMMIT_MESSAGE" value="人设" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
