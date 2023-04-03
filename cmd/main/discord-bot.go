@@ -278,8 +278,9 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 	api := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
-		"model":    "gpt-3.5-turbo",
-		"messages": messages,
+		"model":       "gpt-3.5-turbo",
+		"messages":    messages,
+		"temperature": 2,
 	}
 	body, err := json.Marshal(payload)
 
