@@ -1,8 +1,8 @@
 applicationId: 1084372136812089414
 guildId: 1084356913816412190
 channelId: 1084356913816412195
-#home: /app
-home: /Users/suolongga/app
+home: /app
+#home: /Users/suolongga/app
 maxFetchRecord: 100
 maxUserRecord: 50
 clearCmd: 你这个傲慢的自私的没礼貌的家伙……啊！！！刚才发生了什么???
