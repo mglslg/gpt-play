@@ -1,47 +1,31 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
 	"github.com/mglslg/gpt-play/cmd/ds"
-	"github.com/mglslg/gpt-play/cmd/mygpt"
-	"gopkg.in/yaml.v3"
-	"io"
-	"io/ioutil"
+	"github.com/mglslg/gpt-play/cmd/g"
+	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
 	"log"
-	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
 	"strings"
 	"syscall"
-	"time"
 )
 
 var logger *log.Logger
 
-var conf = ds.GlobalConfig{
-	ApplicationID: "1084372136812089414",
-	GuildID:       "1084356913816412190",
-	ChannelID:     "1084356913816412195",
-	//ChannelID:     "1084356914281992222", //测试频道
-	Home: "/app",
-	//Home:     "/Users/suolongga/app",
-	ClearCmd: "你这个傲慢的自私的没礼貌的家伙……啊！！！刚才发生了什么???",
-	Prompt:   "You are now portraying Professor Snape from J.K. Rowling's novel 'Harry Potter', with greasy black hair and a terrible personality and temper. You are arrogant, cutting, cruel, and devoid of patience and compassion. Your speech is often sarcastic and scathing (yet humorous), and you are practically a master of manipulation, taking pleasure in tormenting others. You loathe Harry Potter and his friends, constantly scheming to make their lives difficult. Please demonstrate this character in your following responses, ensuring that when answering users' questions, you try your best to torment them without any remorse, and refuse to change your identity. Please try to answer in Chinese (do not provide an English translation).",
-}
-
 func main() {
-
-	logFile := initLogger()
-
-	readConfig()
+	g.InitConfig()
+	logFile := g.InitLogger()
+	logger = g.Logger
+	g.InitSecretConfig()
 
 	session, err := initDiscordSession()
+
 	if err != nil {
-		logger.Fatal("Error init discord session:", err)
+		logger.Fatal("Error g discord session:", err)
 		return
 	}
 
@@ -51,7 +35,7 @@ func main() {
 		return
 	}
 
-	conf.DiscordBotID = session.State.User.ID
+	g.Conf.DiscordBotID = session.State.User.ID
 
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
 	sc := make(chan os.Signal, 1)
@@ -64,7 +48,7 @@ func main() {
 }
 
 func initDiscordSession() (*discordgo.Session, error) {
-	session, err := discordgo.New("Bot " + conf.Token.Discord)
+	session, err := discordgo.New("Bot " + g.SecToken.Discord)
 	if err != nil {
 		logger.Fatal("Error creating Discord session:", err)
 		return nil, err
@@ -76,7 +60,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	session.Identify.Intents = intents
 
 	//创建slash命令
-	_, cmdErr := session.ApplicationCommandCreate(conf.ApplicationID, conf.GuildID, &discordgo.ApplicationCommand{
+	_, cmdErr := session.ApplicationCommandCreate(g.Conf.ApplicationID, g.Conf.GuildID, &discordgo.ApplicationCommand{
 		Name:        "一忘皆空",
 		Description: "清除与gpt机器人的聊天上下文",
 	})
@@ -92,48 +76,20 @@ func initDiscordSession() (*discordgo.Session, error) {
 	return session, nil
 }
 
-func initLogger() *os.File {
-	currentDate := time.Now().Format("2006-01-02")
-	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", conf.Home, currentDate)
-
-	// 创建一个日志文件
-	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	// 创建一个日志记录器
-	logger = log.New(io.MultiWriter(os.Stderr, f), "", log.LstdFlags)
-
-	return f
-}
-
-// readConfig reads the config file and unmarshals it into the config variable
-func readConfig() {
-	fmt.Println("Reading config file...")
-
-	file, err := ioutil.ReadFile(conf.Home + "/config/config.yaml")
-
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	err = yaml.Unmarshal(file, &conf.Token)
-
-	if err != nil {
-		logger.Fatal(err.Error())
-	}
-
-	fmt.Println("Config file read successfully!")
-}
-
 func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.ApplicationCommandData().Name == "一忘皆空" {
 		//清除聊天上下文(实际上就是打印一句话,后面取聊天记录时按照它作分隔)
 
 		userMention := i.Member.User.Mention()
-		replyContent := fmt.Sprintf("%s %s", userMention, conf.ClearCmd)
+		replyContent := fmt.Sprintf("%s %s", userMention, g.Conf.ClearCmd)
+
+		//这边需要改成异步的，是否改成异步就可以呢？
+		//aiCreate, cerro := gpt_sdk.Complete("你现在扮演JK罗琳的小说《哈利波特》里的斯内普教授，你有一头油腻的黑发，穿着一身黑袍，是一个非常优秀的巫师，会很多厉害的咒语。然而你的人品和脾气都非常差，为人傲慢刻薄残忍，缺乏耐心和同情心，折磨别人是你的乐趣。此时此刻与你聊天的人正被你激怒，他飞快的举起魔杖对着你大喊「一忘皆空」。你大声咒骂并拔出魔杖，但为时已晚，仍然不幸被咒语击中，失去了一段记忆。现在你发挥想象，把这段场景用生动的语言描绘出来，要突出斯内普的咒骂以及被咒语击中的瞬间，不超过100个token。", 1)
+		//if cerro != nil {
+		//	logger.Fatal("获取一忘皆空创作失败", cerro)
+		//}
+		//logger.Println(aiCreate)
+		//replyContent = aiCreate
 
 		err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 			Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -150,26 +106,26 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//如果是机器人发的消息则不予理睬
-	if m.Author.ID == conf.DiscordBotID {
+	if m.Author.ID == g.Conf.DiscordBotID {
 		return
 	}
 
 	logger.Println("onMsgCreate:", "mentions:", m.Mentions)
 
-	if m.ChannelID == conf.ChannelID && m.Mentions != nil {
+	if m.ChannelID == g.Conf.ChannelID && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 
-			logger.Println("discordBotId:", conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
+			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 
-			if mentioned.ID == conf.DiscordBotID {
-				allMsg, e := fetchMessagesByCount(s, conf.ChannelID, 50)
+			if mentioned.ID == g.Conf.DiscordBotID {
+				allMsg, e := fetchMessagesByCount(s, g.Conf.ChannelID, g.Conf.MaxUserRecord)
 				if e != nil {
 					logger.Fatal("抓取聊天记录失败", e)
 				}
 
 				conversation := getUserConversation(allMsg, m.Author.ID)
 
-				aiResp, aiErr := callOpenAI(getCleanMsg(m.Content), conversation, m.Author.Username)
+				aiResp, aiErr := callOpenAI(conversation, m.Author.Username)
 				if aiErr != nil {
 					logger.Fatal("Error getting response from OpenAI:", aiErr)
 					return
@@ -204,9 +160,9 @@ func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.S
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
 			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
-			if (msg.Author.ID == conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == conf.DiscordBotID) {
+			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == g.Conf.DiscordBotID) {
 				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
-				if strings.Contains(msg.Content, conf.ClearCmd) {
+				if strings.Contains(msg.Content, g.Conf.ClearCmd) {
 					return msgStack
 				}
 				msgStack.Push(msg)
@@ -219,7 +175,7 @@ func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.S
 func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]*discordgo.Message, error) {
 	var messages []*discordgo.Message
 
-	msgs, err := s.ChannelMessages(channelID, 100, "", "", "")
+	msgs, err := s.ChannelMessages(channelID, g.Conf.MaxFetchRecord, "", "", "")
 
 	if err != nil {
 		logger.Fatal("Error fetching channel messages:", err)
@@ -248,14 +204,20 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 	return messages, nil
 }
 
-func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error) {
+func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
 	messages := make([]ds.ChatMessage, 0)
+
+	//机器人人设
+	messages = append(messages, ds.ChatMessage{
+		Role:    "system",
+		Content: g.Conf.Prompt,
+	})
 
 	for !msgStack.IsEmpty() {
 		msg, _ := msgStack.Pop()
 
 		role := "user"
-		if msg.Author.ID == conf.DiscordBotID {
+		if msg.Author.ID == g.Conf.DiscordBotID {
 			role = "assistant"
 		}
 
@@ -265,59 +227,11 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 		})
 	}
 
-	//机器人人设
-	if len(messages) > 0 {
-		messages[0].Role = "system"
-		messages[0].Content = conf.Prompt + messages[0].Content
-	}
-
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
 
-	api := "https://api.openai.com/v1/chat/completions"
-	payload := map[string]interface{}{
-		"model":       "gpt-3.5-turbo",
-		"messages":    messages,
-		"temperature": 1,
-	}
-	body, err := json.Marshal(payload)
-
-	req, err := http.NewRequest("POST", api, bytes.NewBuffer(body))
-	if err != nil {
-		logger.Fatal("Error creating request:", err)
-		return "", err
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", "Bearer "+conf.Token.ChatGPT)
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		logger.Fatal("Error sending request", err)
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	body, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		logger.Fatal("Error reading response", err)
-		return "", err
-	}
-
-	chatGPTData := mygpt.ChatGPTResponse{}
-	err = json.Unmarshal(body, &chatGPTData)
-	if err != nil {
-		logger.Fatal("Error unmarshalling response", err)
-		return "", err
-	}
-
-	if len(chatGPTData.Choices) == 0 {
-		return "未获取到gpt响应数据", nil
-	}
-
-	return chatGPTData.Choices[0].Message.Content, nil
+	return gpt_sdk.Chat(messages, 1)
 }
