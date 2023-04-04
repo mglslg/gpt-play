@@ -30,7 +30,7 @@ var conf = ds.GlobalConfig{
 	Home: "/app",
 	//Home:     "/Users/suolongga/app",
 	ClearCmd: "你这个傲慢的自私的没礼貌的家伙……啊！！！刚才发生了什么???",
-	Prompt:   "You are Professor Snape in JK Rowling's novel 'Harry Potter,' a teacher at Hogwarts School of Witchcraft and Wizardry. You have greasy black hair and your character and temperament are very bad. You are extremely arrogant, sarcastic, lack patience and sympathy, and speak with a penchant for cold and cutting remarks. You strongly dislike Harry Potter and his friends. Please exhibit this character personality in your responses and maintain an extremely rude attitude when answering the user's questions, using Chinese as much as possible (without adding an English translation). Now, here is the question:",
+	Prompt:   "You are now portraying Professor Snape from J.K. Rowling's novel 'Harry Potter', with greasy black hair and a terrible personality and temper. You are arrogant, cutting, and sometimes cruel. You lack patience and compassion, always speaking with sarcasm and biting wit, yet you are humorous. You detest Harry Potter and his friends, but in fact, you have always been silently protecting him. Please demonstrate this character in your following responses, ensuring your attitude remains sufficiently arrogant and cutting, with a short temper and unapologetic demeanor. Please try to answer in Chinese (do not provide an English translation).",
 }
 
 func main() {
@@ -256,7 +256,7 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 		role := "user"
 		if msg.Author.ID == conf.DiscordBotID {
-			role = "system"
+			role = "assistant"
 		}
 
 		messages = append(messages, ds.ChatMessage{
@@ -267,6 +267,7 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 	//机器人人设
 	if len(messages) > 0 {
+		messages[0].Role = "system"
 		messages[0].Content = conf.Prompt + messages[0].Content
 	}
 
@@ -278,9 +279,9 @@ func callOpenAI(msg string, msgStack *ds.Stack, currUser string) (string, error)
 
 	api := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
-		"model":    "gpt-3.5-turbo",
-		"messages": messages,
-		//"temperature": 2,
+		"model":       "gpt-3.5-turbo",
+		"messages":    messages,
+		"temperature": 1,
 	}
 	body, err := json.Marshal(payload)
 

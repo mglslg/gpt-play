@@ -143,7 +143,8 @@
     <MESSAGE value="斯内普人设" />
     <MESSAGE value="调整temperature" />
     <MESSAGE value="人设" />
-    <option name="LAST_COMMIT_MESSAGE" value="人设" />
+    <MESSAGE value="增加上下文数量为50" />
+    <option name="LAST_COMMIT_MESSAGE" value="增加上下文数量为50" />
   </component>
   <component name="VgoProject">
     <settings-migrated>true</settings-migrated>
