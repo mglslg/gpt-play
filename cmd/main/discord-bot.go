@@ -1,10 +1,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/bwmarrin/discordgo"
-	"github.com/mglslg/gpt-play/cmd/ds"
 	"github.com/mglslg/gpt-play/cmd/g"
+	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
 	"log"
 	"os"
@@ -17,9 +18,24 @@ import (
 var logger *log.Logger
 
 func main() {
-	g.InitConfig()
+	//默认使用Snape
+	var roleName string
+	flag.StringVar(&roleName, "role", "Snape", "The role of the bot")
+	flag.Parse()
+
+	fmt.Println(roleName)
+
+	//默认使用local_config.yaml
+	var configFilePath string
+	flag.StringVar(&configFilePath, "config", "config/local_config.yaml", "path to config file")
+	flag.Parse()
+
+	fmt.Println(configFilePath)
+
+	g.InitConfig(configFilePath)
 	logFile := g.InitLogger()
 	logger = g.Logger
+	g.InitRole(roleName)
 	g.InitSecretConfig()
 
 	session, err := initDiscordSession()
@@ -60,7 +76,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	session.Identify.Intents = intents
 
 	//创建slash命令
-	_, cmdErr := session.ApplicationCommandCreate(g.Conf.ApplicationID, g.Conf.GuildID, &discordgo.ApplicationCommand{
+	_, cmdErr := session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
 		Name:        "一忘皆空",
 		Description: "清除与gpt机器人的聊天上下文",
 	})
@@ -81,7 +97,7 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		//清除聊天上下文(实际上就是打印一句话,后面取聊天记录时按照它作分隔)
 
 		userMention := i.Member.User.Mention()
-		replyContent := fmt.Sprintf("%s %s", userMention, g.Conf.ClearCmd)
+		replyContent := fmt.Sprintf("%s %s", userMention, g.Role.ClearDelimiter)
 
 		//这边需要改成异步的，是否改成异步就可以呢？
 		//aiCreate, cerro := gpt_sdk.Complete("你现在扮演JK罗琳的小说《哈利波特》里的斯内普教授，你有一头油腻的黑发，穿着一身黑袍，是一个非常优秀的巫师，会很多厉害的咒语。然而你的人品和脾气都非常差，为人傲慢刻薄残忍，缺乏耐心和同情心，折磨别人是你的乐趣。此时此刻与你聊天的人正被你激怒，他飞快的举起魔杖对着你大喊「一忘皆空」。你大声咒骂并拔出魔杖，但为时已晚，仍然不幸被咒语击中，失去了一段记忆。现在你发挥想象，把这段场景用生动的语言描绘出来，要突出斯内普的咒骂以及被咒语击中的瞬间，不超过100个token。", 1)
@@ -112,13 +128,13 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	logger.Println("onMsgCreate:", "mentions:", m.Mentions)
 
-	if m.ChannelID == g.Conf.ChannelID && m.Mentions != nil {
+	if m.ChannelID == g.Role.ChannelIds[0] && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 
 			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 
 			if mentioned.ID == g.Conf.DiscordBotID {
-				allMsg, e := fetchMessagesByCount(s, g.Conf.ChannelID, g.Conf.MaxUserRecord)
+				allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
 				if e != nil {
 					logger.Fatal("抓取聊天记录失败", e)
 				}
@@ -162,7 +178,7 @@ func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.S
 			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
 			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == g.Conf.DiscordBotID) {
 				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
-				if strings.Contains(msg.Content, g.Conf.ClearCmd) {
+				if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
 					return msgStack
 				}
 				msgStack.Push(msg)
@@ -210,7 +226,7 @@ func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
 	//机器人人设
 	messages = append(messages, ds.ChatMessage{
 		Role:    "system",
-		Content: g.Conf.Prompt,
+		Content: g.Role.Characters[0].Desc,
 	})
 
 	for !msgStack.IsEmpty() {

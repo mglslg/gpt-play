@@ -1,4 +1,4 @@
-package gpt_sdk
+package ds
 
 // ChatGPTResponse is the response from the chatgpt api
 type ChatGPTResponse struct {

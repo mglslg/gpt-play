@@ -1,8 +1,9 @@
 package g
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/mglslg/gpt-play/cmd/ds"
+	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"gopkg.in/yaml.v3"
 	"io"
 	"io/ioutil"
@@ -14,15 +15,15 @@ import (
 var Logger *log.Logger
 var Conf ds.GlobalConfig
 var SecToken ds.Token
+var Role ds.Role
 
 // readConfig reads the config file and unmarshals it into the config variable
-func InitConfig() {
+func InitConfig(configPath string) {
 	fmt.Println("Reading config file...")
 
-	file, err := ioutil.ReadFile("config/config.yaml")
-
+	file, err := os.ReadFile(configPath)
 	if err != nil {
-		fmt.Println("Reading config file failed!", err)
+		fmt.Println("Read config failed...", err)
 		return
 	}
 
@@ -53,10 +54,27 @@ func InitLogger() *os.File {
 	return f
 }
 
+func InitRole(roleName string) {
+	roleConfFile := fmt.Sprintf("role/%s.json", roleName)
+
+	file, err := os.ReadFile(roleConfFile)
+	if err != nil {
+		Logger.Fatal("Read role config failed:", err)
+	}
+
+	Role.Name = roleName
+	err = json.Unmarshal(file, &Role)
+
+	if err != nil {
+		Logger.Fatal("Resolve role config file failed:", err)
+	}
+	Logger.Println("This is " + Role.Name)
+}
+
 func InitSecretConfig() {
 	fmt.Println("Reading secret config file...")
 
-	file, err := ioutil.ReadFile(Conf.Home + "/config/config.yaml")
+	file, err := ioutil.ReadFile(Conf.Home + "/config/" + Role.Name + ".yaml")
 
 	if err != nil {
 		Logger.Fatal(err.Error())
@@ -68,5 +86,5 @@ func InitSecretConfig() {
 		Logger.Fatal(err.Error())
 	}
 
-	Logger.Println("Secret Config file read successfully!")
+	Logger.Println("Secret Config file read successfully!Token:", SecToken.Discord)
 }

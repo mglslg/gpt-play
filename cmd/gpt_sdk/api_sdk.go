@@ -3,8 +3,9 @@ package gpt_sdk
 import (
 	"bytes"
 	"encoding/json"
-	"github.com/mglslg/gpt-play/cmd/ds"
 	"github.com/mglslg/gpt-play/cmd/g"
+	"github.com/mglslg/gpt-play/cmd/g/ds"
+	ds2 "github.com/mglslg/gpt-play/cmd/gpt_sdk/ds"
 	"io/ioutil"
 	"net/http"
 )
@@ -42,7 +43,7 @@ func Chat(msg []ds.ChatMessage, temperature int) (string, error) {
 		return "", err
 	}
 
-	chatGptResponse := ChatGPTResponse{}
+	chatGptResponse := ds2.ChatGPTResponse{}
 	err = json.Unmarshal(body, &chatGptResponse)
 	if err != nil {
 		g.Logger.Fatal("Error unmarshalling response", err)
@@ -97,7 +98,7 @@ func Complete(prompt string, temperature int) (string, error) {
 		return "", err
 	}
 
-	chatGptResponse := ChatGPTResponse{}
+	chatGptResponse := ds2.ChatGPTResponse{}
 	err = json.Unmarshal(body, &chatGptResponse)
 	if err != nil {
 		g.Logger.Fatal("Error unmarshalling response", err)

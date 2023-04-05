@@ -1,6 +1,8 @@
-package gpt_sdk
+package ds
 
-import "github.com/mglslg/gpt-play/cmd/ds"
+import (
+	"github.com/mglslg/gpt-play/cmd/g/ds"
+)
 
 type CompleteBody struct {
 	Model       string           `json:"model"`
