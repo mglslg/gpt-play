@@ -51,7 +51,7 @@ func InitRole(roleName string) {
 	if err != nil {
 		fmt.Println("Resolve role config file failed:", err)
 	}
-	Logger.Println("This is " + Role.Name)
+	fmt.Println("This is " + Role.Name)
 }
 
 func InitLogger() *os.File {
