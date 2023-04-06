@@ -29,9 +29,9 @@ func main() {
 	flag.Parse()
 
 	g.InitConfig(configFilePath)
+	g.InitRole(roleName)
 	logFile := g.InitLogger()
 	logger = g.Logger
-	g.InitRole(roleName)
 	g.InitSecretConfig()
 
 	session, err := initDiscordSession()

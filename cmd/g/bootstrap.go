@@ -37,9 +37,26 @@ func InitConfig(configPath string) {
 	fmt.Println("Config file read successfully!")
 }
 
+func InitRole(roleName string) {
+	roleConfFile := fmt.Sprintf("role/%s.json", roleName)
+
+	file, err := os.ReadFile(roleConfFile)
+	if err != nil {
+		fmt.Println("Read role config failed:", err)
+	}
+
+	Role.Name = roleName
+	err = json.Unmarshal(file, &Role)
+
+	if err != nil {
+		fmt.Println("Resolve role config file failed:", err)
+	}
+	Logger.Println("This is " + Role.Name)
+}
+
 func InitLogger() *os.File {
 	currentDate := time.Now().Format("2006-01-02")
-	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", Conf.Home, currentDate)
+	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", Conf.Home, currentDate+"-"+Role.Name)
 
 	// 创建一个日志文件
 	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -52,23 +69,6 @@ func InitLogger() *os.File {
 	Logger = log.New(io.MultiWriter(os.Stderr, f), "", log.LstdFlags)
 
 	return f
-}
-
-func InitRole(roleName string) {
-	roleConfFile := fmt.Sprintf("role/%s.json", roleName)
-
-	file, err := os.ReadFile(roleConfFile)
-	if err != nil {
-		Logger.Fatal("Read role config failed:", err)
-	}
-
-	Role.Name = roleName
-	err = json.Unmarshal(file, &Role)
-
-	if err != nil {
-		Logger.Fatal("Resolve role config file failed:", err)
-	}
-	Logger.Println("This is " + Role.Name)
 }
 
 func InitSecretConfig() {
