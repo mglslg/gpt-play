@@ -16,11 +16,12 @@ import (
 )
 
 var logger *log.Logger
+var adminId = "1049923686288863283"
 
 func main() {
 	//默认使用Snape
 	var roleName string
-	flag.StringVar(&roleName, "role", "Snape", "The role of the bot")
+	flag.StringVar(&roleName, "role", "Hermione", "The role of the bot")
 
 	//默认使用local_config.yaml
 	var configFilePath string
@@ -122,38 +123,56 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	logger.Println("onMsgCreate:", "mentions:", m.Mentions)
+	// 检查消息是否为私聊消息
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		logger.Fatal("Error getting channel,", err)
+	}
 
-	if m.ChannelID == g.Role.ChannelIds[0] && m.Mentions != nil {
+	if channel.Type == discordgo.ChannelTypeDM && m.Author.ID == adminId {
+		reply(s, m)
+	} else if m.Author.ID == adminId && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
-
 			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
-
 			if mentioned.ID == g.Conf.DiscordBotID {
-				allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
-				if e != nil {
-					logger.Fatal("抓取聊天记录失败", e)
-				}
-
-				conversation := getUserConversation(allMsg, m.Author.ID)
-
-				aiResp, aiErr := callOpenAI(conversation, m.Author.Username)
-				if aiErr != nil {
-					logger.Fatal("Error getting response from OpenAI:", aiErr)
-					return
-				}
-
-				// Mention the user who asked the question
-				msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), aiResp)
-
-				_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
-
-				if err != nil {
-					logger.Fatal("Error sending message:", err)
-				}
+				reply(s, m)
 				break
 			}
 		}
+	} else {
+		if m.ChannelID == g.Role.ChannelIds[0] && m.Mentions != nil {
+			for _, mentioned := range m.Mentions {
+				logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
+				if mentioned.ID == g.Conf.DiscordBotID {
+					reply(s, m)
+					break
+				}
+			}
+		}
+	}
+}
+
+// 回复用户消息
+func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
+	allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
+	if e != nil {
+		logger.Fatal("抓取聊天记录失败", e)
+	}
+
+	conversation := getUserConversation(allMsg, m.Author.ID)
+
+	aiResp, aiErr := callOpenAI(conversation, m.Author.Username)
+	if aiErr != nil {
+		logger.Fatal("Error getting response from OpenAI:", aiErr)
+	}
+
+	// Mention the user who asked the question
+	msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), aiResp)
+
+	_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
+
+	if err != nil {
+		logger.Fatal("Error sending message:", err)
 	}
 }
 
@@ -217,14 +236,8 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 }
 
 func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
+	//打包消息列表
 	messages := make([]ds.ChatMessage, 0)
-
-	//机器人人设
-	messages = append(messages, ds.ChatMessage{
-		Role:    "system",
-		Content: g.Role.Characters[0].Desc,
-	})
-
 	for !msgStack.IsEmpty() {
 		msg, _ := msgStack.Pop()
 
@@ -239,11 +252,66 @@ func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
 		})
 	}
 
+	//消息数大于10时使用概括策略,否则使用完整策略
+	if len(messages) > 10 {
+		return abstractStrategy(messages, currUser)
+	}
+	return completeStrategy(messages, currUser)
+}
+
+func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string, err error) {
+	lastIdx := len(messages) - 1
+	lastQuestion := messages[lastIdx]
+
+	//给倒数第二条聊天记录设置人设，降低逃逸概率
+	messages[lastIdx] = ds.ChatMessage{
+		Role:    "system",
+		Content: g.Role.Characters[0].Desc,
+	}
+	messages = append(messages, lastQuestion)
+
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
-
 	return gpt_sdk.Chat(messages, 1)
+}
+
+func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string, err error) {
+	lastIdx := len(messages) - 1
+	lastQuestion := messages[lastIdx]
+
+	messages[lastIdx] = ds.ChatMessage{
+		Role:    "user",
+		Content: "尽量详细的概括上述聊天内容",
+	}
+	abstract, _ := gpt_sdk.Chat(messages, 1)
+	abstractMsg := make([]ds.ChatMessage, 0)
+
+	//上下文的概括
+	abstractMsg = append(abstractMsg, ds.ChatMessage{
+		Role:    "assistant",
+		Content: abstract,
+	})
+
+	//人设
+	abstractMsg = append(abstractMsg, ds.ChatMessage{
+		Role:    "system",
+		Content: g.Role.Characters[0].Desc,
+	})
+
+	//用户问题
+	abstractMsg = append(abstractMsg, ds.ChatMessage{
+		Role:    "user",
+		Content: lastQuestion.Content,
+	})
+
+	logger.Println("================", currUser, "================")
+	for _, m := range abstractMsg {
+		logger.Println(m.Role, ":", getCleanMsg(m.Content))
+	}
+	logger.Println("================================")
+
+	return gpt_sdk.Chat(abstractMsg, 1)
 }
