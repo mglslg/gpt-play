@@ -17,6 +17,7 @@ import (
 
 var logger *log.Logger
 var adminId = "1049923686288863283"
+var irmuunId = "1094082490500657312"
 
 func main() {
 	//默认使用Snape
@@ -131,7 +132,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	if channel.Type == discordgo.ChannelTypeDM && m.Author.ID == adminId {
 		reply(s, m)
-	} else if m.Author.ID == adminId && m.Mentions != nil {
+	} else if (m.Author.ID == adminId || m.Author.ID == irmuunId) && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 			if mentioned.ID == g.Conf.DiscordBotID {
