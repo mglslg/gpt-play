@@ -155,6 +155,8 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // 回复用户消息
 func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
+	s.ChannelTyping(m.ChannelID)
+
 	allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
 	if e != nil {
 		logger.Fatal("抓取聊天记录失败", e)
@@ -166,6 +168,7 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if aiErr != nil {
 		logger.Fatal("Error getting response from OpenAI:", aiErr)
 	}
+	s.ChannelTyping(m.ChannelID)
 
 	// Mention the user who asked the question
 	msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), aiResp)
