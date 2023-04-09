@@ -13,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"syscall"
+	"time"
 )
 
 var logger *log.Logger
@@ -155,8 +156,6 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // 回复用户消息
 func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
-	s.ChannelTyping(m.ChannelID)
-
 	allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
 	if e != nil {
 		logger.Fatal("抓取聊天记录失败", e)
@@ -164,19 +163,25 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	conversation := getUserConversation(allMsg, m.Author.ID)
 
-	aiResp, aiErr := callOpenAI(conversation, m.Author.Username)
-	if aiErr != nil {
-		logger.Fatal("Error getting response from OpenAI:", aiErr)
-	}
-	s.ChannelTyping(m.ChannelID)
+	//异步获取聊天记录并提示[正在输入]
+	rsChnl := make(chan string)
+	go callOpenAI(conversation, m.Author.Username, rsChnl)
+	for {
+		select {
+		case gptResp := <-rsChnl:
+			// Mention the user who asked the question
+			msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), gptResp)
 
-	// Mention the user who asked the question
-	msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), aiResp)
+			_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
 
-	_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
-
-	if err != nil {
-		logger.Fatal("Error sending message:", err)
+			if err != nil {
+				logger.Fatal("Error sending message:", err)
+			}
+			return
+		default:
+			s.ChannelTyping(m.ChannelID)
+			time.Sleep(5 * time.Second)
+		}
 	}
 }
 
@@ -239,7 +244,7 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 	return messages, nil
 }
 
-func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
+func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) {
 	//打包消息列表
 	messages := make([]ds.ChatMessage, 0)
 	for !msgStack.IsEmpty() {
@@ -258,12 +263,13 @@ func callOpenAI(msgStack *ds.Stack, currUser string) (string, error) {
 
 	//消息数大于10时使用概括策略,否则使用完整策略
 	if len(messages) > 10 {
-		return abstractStrategy(messages, currUser)
+		resultChannel <- abstractStrategy(messages, currUser)
+	} else {
+		resultChannel <- completeStrategy(messages, currUser)
 	}
-	return completeStrategy(messages, currUser)
 }
 
-func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string, err error) {
+func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
 	lastIdx := len(messages) - 1
 	lastQuestion := messages[lastIdx]
 
@@ -279,10 +285,11 @@ func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string, 
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
-	return gpt_sdk.Chat(messages, 1)
+	result, _ := gpt_sdk.Chat(messages, 1)
+	return result
 }
 
-func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string, err error) {
+func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
 	lastIdx := len(messages) - 1
 	lastQuestion := messages[lastIdx]
 
@@ -317,5 +324,6 @@ func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string, 
 	}
 	logger.Println("================================")
 
-	return gpt_sdk.Chat(abstractMsg, 1)
+	result, _ := gpt_sdk.Chat(abstractMsg, 1)
+	return result
 }
