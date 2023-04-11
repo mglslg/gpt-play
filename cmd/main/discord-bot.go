@@ -250,6 +250,11 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 }
 
 func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) {
+	if msgStack.IsEmpty() {
+		resultChannel <- "[没有获取到任何聊天记录,无法对话]"
+		return
+	}
+
 	//打包消息列表
 	messages := make([]ds.ChatMessage, 0)
 	for !msgStack.IsEmpty() {

@@ -51,7 +51,7 @@ func Chat(msg []ds.ChatMessage, temperature int) (string, error) {
 	}
 
 	if len(chatGptResponse.Choices) == 0 {
-		return "未获取到gpt响应数据", nil
+		return "[未获取到gpt响应数据]", nil
 	}
 
 	return chatGptResponse.Choices[0].Message.Content, nil
@@ -106,7 +106,7 @@ func Complete(prompt string, temperature int) (string, error) {
 	}
 
 	if len(chatGptResponse.Choices) == 0 {
-		return "未获取到gpt响应数据", nil
+		return "[未获取到gpt响应数据]", nil
 	}
 
 	return chatGptResponse.Choices[0].Message.Content, nil
