@@ -21,8 +21,6 @@ var adminId = "1049923686288863283"
 var irmuunId = "1094082490500657312"
 
 func main() {
-	hello()
-
 	//默认使用多比
 	var roleName string
 	flag.StringVar(&roleName, "role", "Dobby", "The role of the bot")
