@@ -3,7 +3,6 @@ package notion_sdk
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"time"
 
 	"github.com/go-resty/resty/v2"
@@ -11,7 +10,7 @@ import (
 
 const (
 	notionAPIBaseURL = "https://api.notion.com/v1"
-	notionAPIVersion = "2022-06-07"
+	notionAPIVersion = "2021-08-16"
 	databaseID       = "69e551fe013249f6a0c6d0d7d7cbba9f"
 	apiKey           = "secret_QHiT0ONKwhJwSbVA61032yWr0M5PK2OSZvicnkGk3VJ"
 )
@@ -25,18 +24,12 @@ type CreatePageResponse struct {
 	Page
 }
 
-func importToNotion() {
+func GetClient() *resty.Client {
 	client := resty.New()
-
-	// Add a new entry to the chat_history database
-	err := addChatHistoryEntry(client, "Hello, Notion!", time.Now())
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error adding entry to chat_history database: %v\n", err)
-		os.Exit(1)
-	}
+	return client
 }
 
-func addChatHistoryEntry(client *resty.Client, title string, date time.Time) error {
+func AddChatHistoryEntry(client *resty.Client, title string, date time.Time) error {
 	// Prepare the request payload
 	payload := map[string]interface{}{
 		"parent": map[string]string{

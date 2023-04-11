@@ -7,6 +7,7 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g"
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
+	"github.com/mglslg/gpt-play/cmd/notion_sdk"
 	"log"
 	"os"
 	"os/signal"
@@ -74,13 +75,22 @@ func initDiscordSession() (*discordgo.Session, error) {
 	intents := discordgo.IntentsAllWithoutPrivileged
 	session.Identify.Intents = intents
 
-	//创建slash命令
+	//创建一忘皆空命令
 	_, cmdErr := session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
 		Name:        "一忘皆空",
 		Description: "清除与gpt机器人的聊天上下文",
 	})
 	if cmdErr != nil {
-		logger.Fatal("create discord command error", cmdErr)
+		logger.Fatal("create 一忘皆空 error", cmdErr)
+		return nil, cmdErr
+	}
+	//创建导入标注内容到Notion命令
+	_, cmdErr = session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
+		Name:        "import_to_notion",
+		Description: "导入标注的聊天记录到Notion",
+	})
+	if cmdErr != nil {
+		logger.Fatal("create 导入标注到Notion error", cmdErr)
 		return nil, cmdErr
 	}
 	session.AddHandler(onSlashCmd)
@@ -114,7 +124,43 @@ func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		})
 
 		if err != nil {
-			fmt.Println("Error responding to slash command: ", err)
+			logger.Println("Error responding to slash command: ", err)
+		}
+	}
+	if i.ApplicationCommandData().Name == "import_to_notion" {
+		// 获取钉住消息列表
+		pins, err := s.ChannelMessagesPinned(i.ChannelID)
+		if err != nil {
+			logger.Println("Error getting pinned messages,", err)
+			return
+		}
+		// 获取钉住消息的内容
+		for _, pin := range pins {
+			client := notion_sdk.GetClient()
+			notionErr := notion_sdk.AddChatHistoryEntry(client, pin.Content, time.Now())
+			if notionErr != nil {
+				err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: "导入失败:" + notionErr.Error(),
+					},
+				})
+				if err != nil {
+					logger.Println("Error responding to slash command: ", err)
+				}
+				logger.Println("Error add chat history entry to notion,", notionErr)
+				return
+			}
+		}
+
+		err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+			Type: discordgo.InteractionResponseChannelMessageWithSource,
+			Data: &discordgo.InteractionResponseData{
+				Content: "导入成功",
+			},
+		})
+		if err != nil {
+			logger.Println("Error responding to slash command: ", err)
 		}
 	}
 }
