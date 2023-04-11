@@ -125,16 +125,10 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	// 检查消息是否为私聊消息
-	channel, err := s.Channel(m.ChannelID)
-	if err != nil {
-		logger.Fatal("Error getting channel,", err)
-	}
-
-	if channel.Type == discordgo.ChannelTypeDM && m.Author.ID == adminId {
+	if isPrivateChat(s, m) && m.Author.ID == adminId {
 		if m.Content == "/一忘皆空" {
 			replyContent := fmt.Sprintf("%s", g.Role.ClearDelimiter)
-			_, err = s.ChannelMessageSend(m.ChannelID, replyContent)
+			s.ChannelMessageSend(m.ChannelID, replyContent)
 		} else {
 			reply(s, m)
 		}
@@ -159,6 +153,18 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 }
 
+// 检查消息是否为私聊消息
+func isPrivateChat(s *discordgo.Session, m *discordgo.MessageCreate) bool {
+	channel, err := s.Channel(m.ChannelID)
+	if err != nil {
+		logger.Fatal("Error getting channel,", err)
+	}
+	if channel.Type == discordgo.ChannelTypeDM {
+		return true
+	}
+	return false
+}
+
 // 回复用户消息
 func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 	allMsg, e := fetchMessagesByCount(s, m.ChannelID, g.Conf.MaxUserRecord)
@@ -166,7 +172,11 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 		logger.Fatal("抓取聊天记录失败", e)
 	}
 
-	conversation := getUserConversation(allMsg, m.Author.ID)
+	//获取聊天上下文
+	conversation := getPublicContext(allMsg, m.Author.ID)
+	if isPrivateChat(s, m) {
+		conversation = getPrivateContext(allMsg, m.Author.ID)
+	}
 
 	//异步获取聊天记录并提示[正在输入]
 	rsChnl := make(chan string)
@@ -200,7 +210,26 @@ func getCleanMsg(content string) string {
 	return cleanedMsg
 }
 
-func getUserConversation(messages []*discordgo.Message, currUserID string) *ds.Stack {
+func getPublicContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
+	msgStack := ds.NewStack()
+	for _, msg := range messages {
+		for _, mention := range msg.Mentions {
+			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
+			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == g.Conf.DiscordBotID) {
+				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
+				if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
+					return msgStack
+				}
+				msgStack.Push(msg)
+			}
+		}
+	}
+	return msgStack
+}
+
+func getPrivateContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
+
+	//todo 待实现
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
