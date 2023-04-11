@@ -132,7 +132,12 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	if channel.Type == discordgo.ChannelTypeDM && m.Author.ID == adminId {
-		reply(s, m)
+		if m.Content == "/一忘皆空" {
+			replyContent := fmt.Sprintf("%s", g.Role.ClearDelimiter)
+			_, err = s.ChannelMessageSend(m.ChannelID, replyContent)
+		} else {
+			reply(s, m)
+		}
 	} else if (m.Author.ID == adminId || m.Author.ID == irmuunId) && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
 			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
