@@ -21,9 +21,11 @@ var adminId = "1049923686288863283"
 var irmuunId = "1094082490500657312"
 
 func main() {
-	//默认使用Snape
+	hello()
+
+	//默认使用多比
 	var roleName string
-	flag.StringVar(&roleName, "role", "Hermione", "The role of the bot")
+	flag.StringVar(&roleName, "role", "Dobby", "The role of the bot")
 
 	//默认使用local_config.yaml
 	var configFilePath string
@@ -134,7 +136,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 	} else if (m.Author.ID == adminId || m.Author.ID == irmuunId) && m.Mentions != nil {
 		for _, mentioned := range m.Mentions {
-			logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
+			//logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 			if mentioned.ID == g.Conf.DiscordBotID {
 				reply(s, m)
 				break
@@ -143,7 +145,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	} else {
 		if m.ChannelID == g.Role.ChannelIds[0] && m.Mentions != nil {
 			for _, mentioned := range m.Mentions {
-				logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
+				//logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
 				if mentioned.ID == g.Conf.DiscordBotID {
 					reply(s, m)
 					break
@@ -173,9 +175,9 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//获取聊天上下文
-	conversation := getPublicContext(allMsg, m.Author.ID)
+	conversation := geMentionContext(allMsg, m.Author.ID)
 	if isPrivateChat(s, m) {
-		conversation = getPrivateContext(allMsg, m.Author.ID)
+		conversation = getPrivateContext(allMsg)
 	}
 
 	//异步获取聊天记录并提示[正在输入]
@@ -187,6 +189,9 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 			// Mention the user who asked the question
 			msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), gptResp)
 
+			if isPrivateChat(s, m) {
+				msgContent = fmt.Sprintf("%s", gptResp)
+			}
 			_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
 
 			if err != nil {
@@ -210,7 +215,7 @@ func getCleanMsg(content string) string {
 	return cleanedMsg
 }
 
-func getPublicContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
+func geMentionContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
@@ -227,21 +232,13 @@ func getPublicContext(messages []*discordgo.Message, currUserID string) *ds.Stac
 	return msgStack
 }
 
-func getPrivateContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
-
-	//todo 待实现
+func getPrivateContext(messages []*discordgo.Message) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
-		for _, mention := range msg.Mentions {
-			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
-			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == g.Conf.DiscordBotID) {
-				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
-				if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
-					return msgStack
-				}
-				msgStack.Push(msg)
-			}
+		if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
+			return msgStack
 		}
+		msgStack.Push(msg)
 	}
 	return msgStack
 }
@@ -301,7 +298,7 @@ func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) 
 	}
 
 	//消息数大于10时使用概括策略,否则使用完整策略
-	if len(messages) > 10 {
+	if len(messages) > 20 {
 		resultChannel <- abstractStrategy(messages, currUser)
 	} else {
 		resultChannel <- completeStrategy(messages, currUser)
