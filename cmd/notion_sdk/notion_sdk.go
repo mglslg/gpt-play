@@ -36,10 +36,10 @@ func AddChatHistoryEntry(client *resty.Client, title string, date time.Time) err
 			"database_id": databaseID,
 		},
 		"properties": map[string]interface{}{
-			"title": map[string]interface{}{
+			"TTTitle": map[string]interface{}{
 				"title": []interface{}{},
 			},
-			"date": map[string]interface{}{
+			"DDDate": map[string]interface{}{
 				"date": map[string]interface{}{
 					"start": date.Format(time.RFC3339),
 				},
@@ -48,7 +48,7 @@ func AddChatHistoryEntry(client *resty.Client, title string, date time.Time) err
 	}
 
 	// Create the title text block
-	payload["properties"].(map[string]interface{})["title"].(map[string]interface{})["title"] = []interface{}{
+	payload["properties"].(map[string]interface{})["TTTitle"].(map[string]interface{})["title"] = []interface{}{
 		map[string]interface{}{
 			"type": "text",
 			"text": map[string]interface{}{
