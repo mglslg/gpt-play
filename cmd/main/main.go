@@ -11,8 +11,6 @@ import (
 )
 
 var logger *log.Logger
-var adminId = "1049923686288863283"
-var irmuunId = "1094082490500657312"
 
 func main() {
 	//默认使用多比
@@ -20,7 +18,7 @@ func main() {
 	flag.StringVar(&roleName, "role", "Dobby", "The role of the bot")
 	//默认使用local_config.yaml
 	var configFilePath string
-	flag.StringVar(&configFilePath, "config", "config/company_config.yaml", "path to config file")
+	flag.StringVar(&configFilePath, "config", "config/local_config.yaml", "path to config file")
 	flag.Parse()
 
 	g.InitConfig(configFilePath)
@@ -28,6 +26,7 @@ func main() {
 	logFile := g.InitLogger()
 	logger = g.Logger
 	g.InitSecretConfig()
+	g.InitPrivateChatAuth()
 
 	session, err := initDiscordSession()
 

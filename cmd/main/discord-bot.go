@@ -7,6 +7,7 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
 	"github.com/mglslg/gpt-play/cmd/notion_sdk"
+	"github.com/mglslg/gpt-play/cmd/util"
 	"regexp"
 	"strings"
 	"time"
@@ -131,25 +132,30 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	if isPrivateChat(s, m) && m.Author.ID == adminId {
-		if m.Content == "/一忘皆空" {
-			replyContent := fmt.Sprintf("%s", g.Role.ClearDelimiter)
-			s.ChannelMessageSend(m.ChannelID, replyContent)
-		} else {
-			reply(s, m)
-		}
-	} else if (m.Author.ID == adminId || m.Author.ID == irmuunId) && m.Mentions != nil {
-		for _, mentioned := range m.Mentions {
-			//logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
-			if mentioned.ID == g.Conf.DiscordBotID {
+	if isPrivateChat(s, m) {
+		if util.ContainsString(m.Author.ID, g.PrivateChatAuth.UserIds) {
+			//私聊
+			if m.Content == "/一忘皆空" {
+				replyContent := fmt.Sprintf("%s", g.Role.ClearDelimiter)
+				s.ChannelMessageSend(m.ChannelID, replyContent)
+			} else {
 				reply(s, m)
-				break
 			}
+		} else {
+			s.ChannelMessageSend(m.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}
 	} else {
-		if m.ChannelID == g.Role.ChannelIds[0] && m.Mentions != nil {
+		if util.ContainsString(m.Author.ID, g.PrivateChatAuth.SuperUserIds) && m.Mentions != nil {
+			//超级用户,不限制频道
 			for _, mentioned := range m.Mentions {
-				//logger.Println("discordBotId:", g.Conf.DiscordBotID+",mentioned.ID:", mentioned.ID)
+				if mentioned.ID == g.Conf.DiscordBotID {
+					reply(s, m)
+					break
+				}
+			}
+		} else if util.ContainsString(m.ChannelID, g.Role.ChannelIds) && m.Mentions != nil {
+			//特定频道聊天,不限制用户
+			for _, mentioned := range m.Mentions {
 				if mentioned.ID == g.Conf.DiscordBotID {
 					reply(s, m)
 					break
