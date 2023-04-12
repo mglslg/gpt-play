@@ -6,7 +6,6 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"gopkg.in/yaml.v3"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"time"
@@ -17,7 +16,7 @@ var Conf ds.GlobalConfig
 var SecToken ds.Token
 var Role ds.Role
 
-// readConfig reads the config file and unmarshals it into the config variable
+// InitConfig readConfig reads the config file and unmarshals it into the config variable
 func InitConfig(configPath string) {
 	fmt.Println("Reading config file...")
 
@@ -74,7 +73,7 @@ func InitLogger() *os.File {
 func InitSecretConfig() {
 	fmt.Println("Reading secret config file...")
 
-	file, err := ioutil.ReadFile(Conf.Home + "/config/" + Role.Name + ".yaml")
+	file, err := os.ReadFile("config/role_secrets/" + Role.Name + ".yaml")
 
 	if err != nil {
 		Logger.Fatal(err.Error())

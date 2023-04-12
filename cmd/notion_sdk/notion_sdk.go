@@ -70,6 +70,17 @@ func AddChatHistoryEntry(client *resty.Client, title string, date time.Time) err
 	}
 
 	if resp.IsError() {
+		// Print detailed response information
+		fmt.Printf("Response Info:\n")
+		fmt.Printf("Status Code: %v\n", resp.StatusCode())
+		fmt.Printf("Status: %v\n", resp.Status())
+		fmt.Printf("Proto: %v\n", resp.Proto())
+		fmt.Printf("Time: %v\n", resp.Time())
+		fmt.Printf("Received At: %v\n", resp.ReceivedAt())
+		fmt.Printf("Body: %v\n", resp)
+		fmt.Printf("Error: %v\n", resp.Error())
+		fmt.Printf("Headers: %v\n", resp.Header())
+
 		return fmt.Errorf("request returned an error: %v", resp.Status())
 	}
 
