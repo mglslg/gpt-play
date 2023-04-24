@@ -187,7 +187,7 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//获取聊天上下文
 	conversation := geMentionContext(allMsg, m.Author.ID)
 	if isPrivateChat(s, m) {
-		logger.Println("==========私聊:", m.Author.Username, ",privateUserId:", m.Author.ID, "==========")
+		logger.Println("/******************私聊Start:", m.Author.Username, ",privateChat:", m.Author.ID, "******************\\")
 		conversation = getPrivateContext(allMsg)
 	}
 
@@ -213,6 +213,10 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelTyping(m.ChannelID)
 			time.Sleep(5 * time.Second)
 		}
+	}
+
+	if isPrivateChat(s, m) {
+		logger.Println("\\******************私聊End:", m.Author.Username, ",privateChat:", m.Author.ID, "******************/")
 	}
 }
 
