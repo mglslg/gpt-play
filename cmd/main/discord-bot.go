@@ -208,15 +208,16 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if err != nil {
 				logger.Fatal("Error sending message:", err)
 			}
+
+			if isPrivateChat(s, m) {
+				logger.Println("\\******************私聊End:", m.Author.Username, ",privateChat:", m.Author.ID, "******************/")
+			}
+
 			return
 		default:
 			s.ChannelTyping(m.ChannelID)
 			time.Sleep(5 * time.Second)
 		}
-	}
-
-	if isPrivateChat(s, m) {
-		logger.Println("\\******************私聊End:", m.Author.Username, ",privateChat:", m.Author.ID, "******************/")
 	}
 }
 
