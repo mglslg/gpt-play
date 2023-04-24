@@ -293,6 +293,13 @@ func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) 
 
 	//打包消息列表
 	messages := make([]ds.ChatMessage, 0)
+
+	//人设
+	messages = append(messages, ds.ChatMessage{
+		Role:    "system",
+		Content: g.Role.Characters[0].Desc,
+	})
+
 	for !msgStack.IsEmpty() {
 		msg, _ := msgStack.Pop()
 
@@ -316,23 +323,6 @@ func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) 
 }
 
 func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
-	//处理数组越界问题
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Println("Panic occurred:", r)
-		}
-	}()
-
-	lastIdx := len(messages) - 1
-	lastQuestion := messages[lastIdx]
-
-	//给倒数第二条聊天记录设置人设，降低逃逸概率
-	messages[lastIdx] = ds.ChatMessage{
-		Role:    "system",
-		Content: g.Role.Characters[0].Desc,
-	}
-	messages = append(messages, lastQuestion)
-
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
@@ -360,16 +350,16 @@ func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 	abstract, _ := gpt_sdk.Chat(messages, 1)
 	abstractMsg := make([]ds.ChatMessage, 0)
 
-	//上下文的概括
-	abstractMsg = append(abstractMsg, ds.ChatMessage{
-		Role:    "assistant",
-		Content: abstract,
-	})
-
 	//人设
 	abstractMsg = append(abstractMsg, ds.ChatMessage{
 		Role:    "system",
 		Content: g.Role.Characters[0].Desc,
+	})
+
+	//上下文的概括
+	abstractMsg = append(abstractMsg, ds.ChatMessage{
+		Role:    "assistant",
+		Content: abstract,
 	})
 
 	//用户问题
@@ -385,5 +375,33 @@ func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 	logger.Println("================================")
 
 	result, _ := gpt_sdk.Chat(abstractMsg, 1)
+	return result
+}
+
+// Deprecated: 备份一下之前在倒数第二句增加的system背景
+func completeStrategy_bak(messages []ds.ChatMessage, currUser string) (resp string) {
+	//处理数组越界问题
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Println("Panic occurred:", r)
+		}
+	}()
+
+	lastIdx := len(messages) - 1
+	lastQuestion := messages[lastIdx]
+
+	//给倒数第二条聊天记录设置人设，降低逃逸概率
+	messages[lastIdx] = ds.ChatMessage{
+		Role:    "system",
+		Content: g.Role.Characters[0].Desc,
+	}
+	messages = append(messages, lastQuestion)
+
+	logger.Println("================", currUser, "================")
+	for _, m := range messages {
+		logger.Println(m.Role, ":", getCleanMsg(m.Content))
+	}
+	logger.Println("================================")
+	result, _ := gpt_sdk.Chat(messages, 1)
 	return result
 }
