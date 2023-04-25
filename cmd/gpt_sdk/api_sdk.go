@@ -22,8 +22,8 @@ func Chat(msg []ds.ChatMessage, temperature int) (string, error) {
 
 	req, err := http.NewRequest("POST", api, bytes.NewBuffer(body))
 	if err != nil {
-		g.Logger.Fatal("Error creating request:", err)
-		return "", err
+		g.Logger.Println("Error creating request:", err)
+		return "[Error creating request:" + err.Error() + "]", err
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -32,22 +32,22 @@ func Chat(msg []ds.ChatMessage, temperature int) (string, error) {
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		g.Logger.Fatal("Error sending request", err)
-		return "", err
+		g.Logger.Println("Error sending request", err)
+		return "[Error sending request:" + err.Error() + "]", err
 	}
 	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		g.Logger.Fatal("Error reading response", err)
-		return "", err
+		g.Logger.Println("Error reading response", err)
+		return "[Error reading response:" + err.Error() + "]", err
 	}
 
 	chatGptResponse := ds2.ChatGPTResponse{}
 	err = json.Unmarshal(body, &chatGptResponse)
 	if err != nil {
-		g.Logger.Fatal("Error unmarshalling response", err)
-		return "", err
+		g.Logger.Println("[Error unmarshalling response]", err)
+		return "[Error unmarshalling response:" + err.Error() + "]", err
 	}
 
 	if len(chatGptResponse.Choices) == 0 {
