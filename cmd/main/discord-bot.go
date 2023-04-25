@@ -203,10 +203,21 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if isPrivateChat(s, m) {
 				msgContent = fmt.Sprintf("%s", gptResp)
 			}
-			_, err := s.ChannelMessageSend(m.ChannelID, msgContent)
 
+			//当消息超长时拆分成两段回复用户,并且不会宕机
+			var err error
+			if len(msgContent) > 2000 {
+				half := len(msgContent) / 2
+				firstHalf := msgContent[:half]
+				secondHalf := msgContent[half:]
+				_, err = s.ChannelMessageSend(m.ChannelID, firstHalf)
+				_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("%s %s", m.Author.Mention(), secondHalf))
+			} else {
+				_, err = s.ChannelMessageSend(m.ChannelID, msgContent)
+			}
 			if err != nil {
-				logger.Fatal("Error sending message:", err)
+				logger.Println("发送discord消息失败,当前消息长度:", len(msgContent), err)
+				_, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprint("[发送discord消息失败,当前消息长度:", len(msgContent), "]"))
 			}
 
 			if isPrivateChat(s, m) {
