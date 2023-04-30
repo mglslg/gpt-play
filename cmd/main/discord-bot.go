@@ -28,7 +28,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	//创建一忘皆空命令
 	_, cmdErr := session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
 		Name:        "一忘皆空",
-		Description: "清除与gpt机器人的聊天上下文",
+		Description: "清除与" + g.Role.Name + "的聊天上下文",
 	})
 	if cmdErr != nil {
 		logger.Fatal("create 一忘皆空 error", cmdErr)
