@@ -10,7 +10,7 @@ import (
 	"net/http"
 )
 
-func Chat(msg []ds.ChatMessage, temperature int) (string, error) {
+func Chat(msg []ds.ChatMessage, temperature float64) (string, error) {
 	api := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
 		"model":       "gpt-3.5-turbo",

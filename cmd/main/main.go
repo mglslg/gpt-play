@@ -15,7 +15,7 @@ var logger *log.Logger
 func main() {
 	//默认使用多比
 	var roleName string
-	flag.StringVar(&roleName, "role", "Dobby", "The role of the bot")
+	flag.StringVar(&roleName, "role", "Boggart", "The role of the bot")
 	//默认使用local_config.yaml
 	var configFilePath string
 	flag.StringVar(&configFilePath, "config", "config/local_config.yaml", "path to config file")

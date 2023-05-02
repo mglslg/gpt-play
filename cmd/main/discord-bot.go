@@ -6,7 +6,6 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g"
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
-	"github.com/mglslg/gpt-play/cmd/notion_sdk"
 	"github.com/mglslg/gpt-play/cmd/util"
 	"regexp"
 	"strings"
@@ -25,104 +24,31 @@ func initDiscordSession() (*discordgo.Session, error) {
 	intents := discordgo.IntentsAllWithoutPrivileged
 	session.Identify.Intents = intents
 
-	//创建一忘皆空命令
-	_, cmdErr := session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
-		Name:        "一忘皆空",
-		Description: "清除与" + g.Role.Name + "的聊天上下文",
-	})
-	if cmdErr != nil {
-		logger.Fatal("create 一忘皆空 error", cmdErr)
-		return nil, cmdErr
+	if g.Role.Name == "Boggart" {
+		createCmd(session, "滑稽滑稽", "清除博格特上下文")
+		createCmd(session, "python专家", "解答各类python相关问题")
+		createCmd(session, "golang专家", "解答各类golang相关问题")
+		session.AddHandler(onBoggartSlashCmd)
+	} else {
+		createCmd(session, "一忘皆空", "清除与"+g.Role.Name+"的聊天上下文")
+		session.AddHandler(doForgetAllCmd)
 	}
-	//创建导入标注内容到Notion命令
-	_, cmdErr = session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
-		Name:        "import_to_notion",
-		Description: "导入标注的聊天记录到Notion",
-	})
-	if cmdErr != nil {
-		logger.Fatal("create 导入标注到Notion error", cmdErr)
-		return nil, cmdErr
-	}
-	session.AddHandler(onSlashCmd)
 
 	//监听消息
 	session.AddHandler(onMsgCreate)
 
+	//session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1095379044637364274")
+
 	return session, nil
 }
 
-func onSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	if i.ApplicationCommandData().Name == "一忘皆空" {
-		doForgetAllCmd(s, i)
-	}
-	if i.ApplicationCommandData().Name == "import_to_notion" {
-		if doPinsToNotionCmd(s, i) {
-			return
-		}
-	}
-}
-
-func doPinsToNotionCmd(s *discordgo.Session, i *discordgo.InteractionCreate) bool {
-	// 获取钉住消息列表
-	pins, err := s.ChannelMessagesPinned(i.ChannelID)
-	if err != nil {
-		logger.Println("Error getting pinned messages,", err)
-		return true
-	}
-	// 获取钉住消息的内容
-	for _, pin := range pins {
-		client := notion_sdk.GetClient()
-		notionErr := notion_sdk.AddChatHistoryEntry(client, pin.Content, time.Now())
-		if notionErr != nil {
-			err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: "导入失败:" + notionErr.Error(),
-				},
-			})
-			if err != nil {
-				logger.Println("Error responding to slash command: ", err)
-			}
-			logger.Println("Error add chat history entry to notion,", notionErr)
-			return true
-		}
-	}
-
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "导入成功",
-		},
+func createCmd(session *discordgo.Session, cmdName string, cmdDesc string) {
+	_, cmdErr := session.ApplicationCommandCreate(g.Role.ApplicationId, g.Conf.GuildID, &discordgo.ApplicationCommand{
+		Name:        cmdName,
+		Description: cmdDesc,
 	})
-	if err != nil {
-		logger.Println("Error responding to slash command: ", err)
-	}
-	return false
-}
-
-func doForgetAllCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//清除聊天上下文(实际上就是打印一句话,后面取聊天记录时按照它作分隔)
-
-	userMention := i.Member.User.Mention()
-	replyContent := fmt.Sprintf("%s %s", userMention, g.Role.ClearDelimiter)
-
-	//这边需要改成异步的，是否改成异步就可以呢？
-	//aiCreate, cerro := gpt_sdk.Complete("你现在扮演JK罗琳的小说《哈利波特》里的斯内普教授，你有一头油腻的黑发，穿着一身黑袍，是一个非常优秀的巫师，会很多厉害的咒语。然而你的人品和脾气都非常差，为人傲慢刻薄残忍，缺乏耐心和同情心，折磨别人是你的乐趣。此时此刻与你聊天的人正被你激怒，他飞快的举起魔杖对着你大喊「一忘皆空」。你大声咒骂并拔出魔杖，但为时已晚，仍然不幸被咒语击中，失去了一段记忆。现在你发挥想象，把这段场景用生动的语言描绘出来，要突出斯内普的咒骂以及被咒语击中的瞬间，不超过100个token。", 1)
-	//if cerro != nil {
-	//	logger.Fatal("获取一忘皆空创作失败", cerro)
-	//}
-	//logger.Println(aiCreate)
-	//replyContent = aiCreate
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: replyContent,
-		},
-	})
-
-	if err != nil {
-		logger.Println("Error responding to slash command: ", err)
+	if cmdErr != nil {
+		logger.Fatal("create "+cmdName+" cmd error", cmdErr)
 	}
 }
 
@@ -312,10 +238,7 @@ func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) 
 	messages := make([]ds.ChatMessage, 0)
 
 	//人设
-	messages = append(messages, ds.ChatMessage{
-		Role:    "system",
-		Content: g.Role.Characters[0].Desc,
-	})
+	makeSystemRole(&messages, g.Role.Characters[0].Desc)
 
 	for !msgStack.IsEmpty() {
 		msg, _ := msgStack.Pop()
@@ -345,7 +268,7 @@ func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
-	result, _ := gpt_sdk.Chat(messages, 1)
+	result, _ := gpt_sdk.Chat(messages, 0.7)
 	return result
 }
 
@@ -364,14 +287,11 @@ func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 		Role:    "user",
 		Content: "尽量详细的概括上述聊天内容",
 	}
-	abstract, _ := gpt_sdk.Chat(messages, 1)
+	abstract, _ := gpt_sdk.Chat(messages, 0)
 	abstractMsg := make([]ds.ChatMessage, 0)
 
 	//人设
-	abstractMsg = append(abstractMsg, ds.ChatMessage{
-		Role:    "system",
-		Content: g.Role.Characters[0].Desc,
-	})
+	makeSystemRole(&abstractMsg, g.Role.Characters[0].Desc)
 
 	//上下文的概括
 	abstractMsg = append(abstractMsg, ds.ChatMessage{
@@ -391,34 +311,13 @@ func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 	}
 	logger.Println("================================")
 
-	result, _ := gpt_sdk.Chat(abstractMsg, 1)
+	result, _ := gpt_sdk.Chat(abstractMsg, 0.7)
 	return result
 }
 
-// Deprecated: 备份一下之前在倒数第二句增加的system背景
-func completeStrategy_bak(messages []ds.ChatMessage, currUser string) (resp string) {
-	//处理数组越界问题
-	defer func() {
-		if r := recover(); r != nil {
-			logger.Println("Panic occurred:", r)
-		}
-	}()
-
-	lastIdx := len(messages) - 1
-	lastQuestion := messages[lastIdx]
-
-	//给倒数第二条聊天记录设置人设，降低逃逸概率
-	messages[lastIdx] = ds.ChatMessage{
+func makeSystemRole(msg *[]ds.ChatMessage, prompt string) {
+	*msg = append(*msg, ds.ChatMessage{
 		Role:    "system",
-		Content: g.Role.Characters[0].Desc,
-	}
-	messages = append(messages, lastQuestion)
-
-	logger.Println("================", currUser, "================")
-	for _, m := range messages {
-		logger.Println(m.Role, ":", getCleanMsg(m.Content))
-	}
-	logger.Println("================================")
-	result, _ := gpt_sdk.Chat(messages, 1)
-	return result
+		Content: prompt,
+	})
 }
