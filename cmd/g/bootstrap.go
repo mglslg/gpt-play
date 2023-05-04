@@ -16,6 +16,7 @@ var Conf ds.GlobalConfig
 var SecToken ds.Token
 var Role ds.Role
 var PrivateChatAuth ds.PrivateChatAuth
+var SessionMap map[string]ds.UserSession
 
 // InitConfig readConfig reads the config file and unmarshals it into the config variable
 func InitConfig(configPath string) {
@@ -100,4 +101,8 @@ func InitPrivateChatAuth() {
 		Logger.Fatal(err.Error())
 	}
 	Logger.Println("private chat authorize read successfully!")
+}
+
+func InitSessionMap() {
+	SessionMap = make(map[string]ds.UserSession)
 }

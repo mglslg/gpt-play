@@ -71,6 +71,13 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}
 	} else {
+		g.SessionMap[m.Author.ID] = ds.UserSession{
+			UserId:    m.Author.ID,
+			UserName:  m.Author.Username,
+			Prompt:    g.Role.Characters[0].Desc,
+			Delimiter: g.Role.ClearDelimiter,
+		}
+
 		if util.ContainsString(m.Author.ID, g.PrivateChatAuth.SuperUserIds) && m.Mentions != nil {
 			//超级用户,不限制频道
 			for _, mentioned := range m.Mentions {

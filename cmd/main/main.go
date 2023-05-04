@@ -27,6 +27,7 @@ func main() {
 	logger = g.Logger
 	g.InitSecretConfig()
 	g.InitPrivateChatAuth()
+	g.InitSessionMap()
 
 	session, err := initDiscordSession()
 
