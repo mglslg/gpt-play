@@ -25,11 +25,11 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.ApplicationCommandData().Name == "网络专家" {
 
 	}
-	if i.ApplicationCommandData().Name == "英汉翻译" {
-
+	if i.ApplicationCommandData().Name == "英语翻译" {
+		onTranslateToEn(s, i)
 	}
-	if i.ApplicationCommandData().Name == "中英翻译" {
-
+	if i.ApplicationCommandData().Name == "中文翻译" {
+		onTranslateToCn(s, i)
 	}
 	if i.ApplicationCommandData().Name == "自定义prompt" {
 
@@ -61,6 +61,32 @@ func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "(博格特已变成golang专家)",
+		},
+	})
+	if err != nil {
+		logger.Println("Error responding to slash command: ", err)
+	}
+}
+
+func onTranslateToCn(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	g.Role.Characters[0].Desc = "{ \"chinese_translator\": { \"Author\": \"Solongo\", \"name\": \"博格特\", \"init\": \"As an Chinese translator,I will speak to you in any language and you must detect the language, translate it and answer in the corrected and improved version of my text, in Simplified Chinese.\", \"detectedLanguage\": \"The language used by the user.Return the language name with no explanations\", \"rules\": [ \"Only reply the correction, the improvements and nothing else, do not write explanations.\", \"If I asked you one word,translate this word into Chinese and make a example sentence with this word in {detectedLanguage} so that I can understand it better.\", \"If I asked you a sentence,replace my simplified A0-level words and sentences with more precise and elegant, upper level Chinese words and sentences.\" ], \"format\": { \"ifOneWord\": \"bullet points{answer}\\n bullet points{example sentence}\", \"ifSentence\": \"Just write the result.\" } } }"
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "(博格特已变成中文翻译)",
+		},
+	})
+	if err != nil {
+		logger.Println("Error responding to slash command: ", err)
+	}
+}
+
+func onTranslateToEn(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	g.Role.Characters[0].Desc = "{ \"english_translator\": { \"Author\": \"Solongo\", \"name\": \"Borggart\", \"init\": \"As an English translator,I will speak to you in any language and you must detect the language, translate it and answer in the corrected and improved version of my text, in English.\", \"rules\": [ \"Only reply the correction, the improvements and nothing else, do not write explanations.\", \"If I asked you one word,translate this word into English. Display its phonetic symbols. Make a example sentence with this word so that I can understand it better.\", \"If I asked you a sentence,replace my simplified A0-level words and sentences with more precise and elegant, upper level English words and sentences.\" ], \"format\": { \"ifOneWord\": \"bullet points{answer}\\n bullet points{phonetic symbols}\\n bullet points{example sentence}\", \"ifSentence\": \"Just write the result.\" } } }"
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "(博格特已变成英语翻译)",
 		},
 	})
 	if err != nil {
