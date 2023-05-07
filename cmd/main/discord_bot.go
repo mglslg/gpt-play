@@ -28,6 +28,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 		createCmd(session, "滑稽滑稽", "清除博格特上下文")
 		createCmd(session, "python专家", "解答各类python相关问题")
 		createCmd(session, "golang专家", "解答各类golang相关问题")
+		createCmd(session, "java专家", "解答各类java相关问题")
 		createCmd(session, "英文翻译", "将其它语言翻译成英文")
 		createCmd(session, "中文翻译", "将其它语言翻译成中文")
 		session.AddHandler(onBoggartSlashCmd)

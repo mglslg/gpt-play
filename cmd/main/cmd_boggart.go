@@ -20,6 +20,9 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if i.ApplicationCommandData().Name == "golang专家" {
 		onGolangExpertCmd(s, i)
 	}
+	if i.ApplicationCommandData().Name == "java专家" {
+		onJavaExpertCmd(s, i)
+	}
 	if i.ApplicationCommandData().Name == "node专家" {
 
 	}
@@ -70,6 +73,22 @@ func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "(博格特已变成golang专家)",
+		},
+	})
+	if err != nil {
+		logger.Println("Error responding to slash command: ", err)
+	}
+}
+
+func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+
+	g.Role.Characters[0].Desc = "Now you are playing the role of a senior Java developer, and you are very familiar with the Java spring ecosystem. You will use your professional knowledge to answer questions for the users.Think in English and answer in Simplified Chinese."
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "(博格特已变成java专家)",
 		},
 	})
 	if err != nil {
