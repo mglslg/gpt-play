@@ -28,7 +28,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 		createCmd(session, "滑稽滑稽", "清除博格特上下文")
 		createCmd(session, "python专家", "解答各类python相关问题")
 		createCmd(session, "golang专家", "解答各类golang相关问题")
-		createCmd(session, "英语翻译", "将其它语言翻译成英文")
+		createCmd(session, "英文翻译", "将其它语言翻译成英文")
 		createCmd(session, "中文翻译", "将其它语言翻译成中文")
 		session.AddHandler(onBoggartSlashCmd)
 	} else {
@@ -39,7 +39,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	//监听消息
 	session.AddHandler(onMsgCreate)
 
-	//session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1095379044637364274")
+	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1103997865866567741")
 
 	return session, nil
 }
@@ -60,6 +60,9 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	//为当前用户创建session
+	g.CreateUserSessionIfNotExist(m.Author.ID, m.Author.Username)
+
 	if isPrivateChat(s, m) {
 		if util.ContainsString(m.Author.ID, g.PrivateChatAuth.UserIds) {
 			//私聊
@@ -73,13 +76,6 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(m.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}
 	} else {
-		g.SessionMap[m.Author.ID] = ds.UserSession{
-			UserId:    m.Author.ID,
-			UserName:  m.Author.Username,
-			Prompt:    g.Role.Characters[0].Desc,
-			Delimiter: g.Role.ClearDelimiter,
-		}
-
 		if util.ContainsString(m.Author.ID, g.PrivateChatAuth.SuperUserIds) && m.Mentions != nil {
 			//超级用户,不限制频道
 			for _, mentioned := range m.Mentions {
@@ -128,7 +124,7 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	//异步获取聊天记录并提示[正在输入]
 	rsChnl := make(chan string)
-	go callOpenAI(conversation, m.Author.Username, rsChnl)
+	go callOpenAI(conversation, m.Author.Username, m.Author.ID, rsChnl)
 	for {
 		select {
 		case gptResp := <-rsChnl:
@@ -237,9 +233,17 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 	return messages, nil
 }
 
-func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) {
+func callOpenAI(msgStack *ds.Stack, currUser string, currUserId string, resultChannel chan string) {
 	if msgStack.IsEmpty() {
 		resultChannel <- "[没有获取到任何聊天记录,无法对话]"
+		return
+	}
+
+	//纯工具机器人
+	currSession, exists := g.SessionMap[currUserId]
+	if exists && currSession.Model == "text-davinci-003" {
+		lastMsg, _ := msgStack.GetBottomElement()
+		resultChannel <- completeStrategy(getCleanMsg(lastMsg.Content), currSession.Prompt, currSession.Model, currUser)
 		return
 	}
 
@@ -265,13 +269,24 @@ func callOpenAI(msgStack *ds.Stack, currUser string, resultChannel chan string) 
 
 	//消息数大于10时使用概括策略,否则使用完整策略
 	if len(messages) > 20 {
-		resultChannel <- abstractStrategy(messages, currUser)
+		resultChannel <- abstractChatStrategy(messages, currUser)
 	} else {
-		resultChannel <- completeStrategy(messages, currUser)
+		resultChannel <- fullChatStrategy(messages, currUser)
 	}
 }
 
-func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
+func completeStrategy(userMessage string, prompt string, model string, currUser string) (resp string) {
+	logger.Println("================CompleteStrategy:", currUser, "================")
+	logger.Println("prompt:", prompt)
+	logger.Println("userMessage:", userMessage)
+
+	result, _ := gpt_sdk.Complete(prompt, userMessage, 0, model)
+
+	logger.Println("================================")
+	return result
+}
+
+func fullChatStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
 	logger.Println("================", currUser, "================")
 	for _, m := range messages {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
@@ -281,7 +296,7 @@ func completeStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 	return result
 }
 
-func abstractStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
+func abstractChatStrategy(messages []ds.ChatMessage, currUser string) (resp string) {
 	//处理数组越界问题
 	defer func() {
 		if r := recover(); r != nil {

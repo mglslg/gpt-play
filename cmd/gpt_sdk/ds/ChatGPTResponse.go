@@ -17,5 +17,6 @@ type ChatGPTResponse struct {
 			Content string `json:"content"`
 		} `json:"message"`
 		FinishReason string `json:"finish_reason"`
+		Text         string `json:"text"`
 	} `json:"choices"`
 }

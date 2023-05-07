@@ -29,6 +29,15 @@ func (s *Stack) Pop() (*discordgo.Message, error) {
 	return topElement, nil
 }
 
+// GetBottomElement 获取栈底数据
+func (s *Stack) GetBottomElement() (*discordgo.Message, error) {
+	if s.Size() != 0 {
+		return s.elements[0], nil
+	} else {
+		return nil, nil
+	}
+}
+
 func (s *Stack) Size() int {
 	return len(s.elements)
 }

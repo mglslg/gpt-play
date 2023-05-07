@@ -53,24 +53,27 @@ func Chat(msg []ds.ChatMessage, temperature float64) (string, error) {
 	if len(chatGptResponse.Choices) == 0 {
 		return "[未获取到gpt响应数据]", nil
 	}
+	g.Logger.Println(">>>>>gpt响应:", chatGptResponse.Choices[0].Message.Content)
+	g.Logger.Println(">>>>>finish原因:", chatGptResponse.Choices[0].FinishReason)
+	g.Logger.Println(">>>>>已花费token:", chatGptResponse.Usage.TotalTokens)
 
 	return chatGptResponse.Choices[0].Message.Content, nil
 }
 
-func Complete(prompt string, temperature int) (string, error) {
-	messages := make([]ds.ChatMessage, 0)
+func Complete(prompt string, message string, temperature int, model string) (string, error) {
+	if model == "" {
+		model = "text-davinci-003"
+	}
 
-	//提示
-	messages = append(messages, ds.ChatMessage{
-		Role:    "system",
-		Content: prompt,
-	})
+	prompt = prompt + "```" + message + "```"
 
-	api := "https://api.openai.com/v1/chat/completions"
+	api := "https://api.openai.com/v1/completions"
 	payload := map[string]interface{}{
-		"model":       "gpt-3.5-turbo",
-		"messages":    messages,
+		"model":       model,
+		"prompt":      prompt,
 		"temperature": temperature,
+		"max_tokens":  2048,
+		"n":           1,
 	}
 
 	body, err := json.Marshal(payload)
@@ -109,5 +112,10 @@ func Complete(prompt string, temperature int) (string, error) {
 		return "[未获取到gpt响应数据]", nil
 	}
 
-	return chatGptResponse.Choices[0].Message.Content, nil
+	g.Logger.Println(">>>>>prompt:", prompt)
+	g.Logger.Println(">>>>>gpt响应:", chatGptResponse.Choices[0].Text)
+	g.Logger.Println(">>>>>finish原因:", chatGptResponse.Choices[0].FinishReason)
+	g.Logger.Println(">>>>>已花费token:", chatGptResponse.Usage.TotalTokens)
+
+	return chatGptResponse.Choices[0].Text, nil
 }

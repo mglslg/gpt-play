@@ -106,3 +106,26 @@ func InitPrivateChatAuth() {
 func InitSessionMap() {
 	SessionMap = make(map[string]ds.UserSession)
 }
+
+// CreateUserSessionIfNotExist 为当前用户创建session
+func CreateUserSessionIfNotExist(authorId string, authorName string) {
+	_, exists := SessionMap[authorId]
+	if !exists {
+		SessionMap[authorId] = ds.UserSession{
+			UserId:         authorId,
+			UserName:       authorName,
+			Prompt:         Role.Characters[0].Desc,
+			ClearDelimiter: Role.ClearDelimiter,
+		}
+	}
+}
+
+// ResetUserSession 重置当前用户session
+func ResetUserSession(authorId string, authorName string) {
+	SessionMap[authorId] = ds.UserSession{
+		UserId:         authorId,
+		UserName:       authorName,
+		Prompt:         Role.Characters[0].Desc,
+		ClearDelimiter: Role.ClearDelimiter,
+	}
+}

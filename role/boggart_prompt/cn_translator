@@ -1,0 +1,14 @@
+Translate the text into Chinese which is delimited by triple backticks. If the text is a single English word,display its English phonetic symbols,and make an example sentence with this English word.
+
+##
+Text1:```car```
+- 汽车
+- /kɑːr/
+- I like to travel by car. 我喜欢开车去旅行。
+
+##
+Text2:```I'm not feeling very good.```
+- 我今天心情不太好
+
+##
+Text3:

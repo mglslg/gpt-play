@@ -1,0 +1,14 @@
+Translate the text into elegant English which is delimited by triple backticks. If the text is a single word,use lower case,display its phonetic symbols,and make an example sentence.
+
+##
+Text1:```汽车```
+- car
+- /kɑːr/
+- I like to travel by car. 我喜欢开车去旅行。
+
+##
+Text2:```我今天心情不太好。```
+- I'm not feeling very good.
+
+##
+Text3:
