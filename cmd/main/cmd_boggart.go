@@ -109,7 +109,7 @@ func onTranslateToCn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成中文翻译)",
+			Content: "(博格特已变成中文翻译,可将其它语言翻译成中文)",
 		},
 	})
 	if err != nil {
@@ -130,7 +130,7 @@ func onTranslateToEn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成英文翻译)",
+			Content: "(博格特已变成英文翻译,可将其它语言翻译成英文)",
 		},
 	})
 	if err != nil {
