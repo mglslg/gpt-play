@@ -51,7 +51,7 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func onPythonExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 
-	g.Role.Characters[0].Desc = "I want you to act as an Python Expert Coder with years of coding experience. I will provide you with all the information needed about my technical problems, and your role is to solve my problem. You should use your experience in Python programming,in computer science, in network infrastructure, and in IT security knowledge to solve my problem. Using intelligent, simple, and understandable language for people of high levels in your answers will be helpful. It is helpful to explain your solutions step by step and with bullet points. Try to avoid too many technical details, but use them when necessary. I want you to reply with the solution, not write any explanations. If you're unsure, just say 'I don't know', don't make things up.Think in English and reply in Simplified Chinese."
+	g.Role.Characters[0].Desc = readPromptFromFile("python_expert")
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -67,7 +67,7 @@ func onPythonExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 
-	g.Role.Characters[0].Desc = "I want you to act as an Golang Expert Coder with years of coding experience. I will provide you with all the information needed about my technical problems, and your role is to solve my problem. You should use your experience in Python programming,in computer science, in network infrastructure, and in IT security knowledge to solve my problem. Using intelligent, simple, and understandable language for people of high levels in your answers will be helpful. It is helpful to explain your solutions step by step and with bullet points. Try to avoid too many technical details, but use them when necessary. I want you to reply with the solution, not write any explanations. If you're unsure, just say 'I don't know', don't make things up.Think in English and reply in Simplified Chinese."
+	g.Role.Characters[0].Desc = readPromptFromFile("golang_expert")
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -83,7 +83,7 @@ func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 
-	g.Role.Characters[0].Desc = "Now you are playing the role of a senior Java developer, and you are very familiar with the Java spring ecosystem. You will use your professional knowledge to answer questions for the users.Think in English and answer in Simplified Chinese."
+	g.Role.Characters[0].Desc = readPromptFromFile("java_expert")
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -102,17 +102,11 @@ func onTranslateToCn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	currUserSession.Model = "text-davinci-003"
 	currUserSession.Temperature = 0
 
-	g.Logger.Println("Reading English translator prompt file...")
-	file, err := os.ReadFile("role/boggart_prompt/cn_translator")
-	if err != nil {
-		g.Logger.Println(err.Error())
-	}
-
-	currUserSession.Prompt = string(file)
+	currUserSession.Prompt = readPromptFromFile("cn_translator")
 
 	g.SessionMap[userId] = currUserSession
 
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "(博格特已变成中文翻译)",
@@ -129,17 +123,11 @@ func onTranslateToEn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	currUserSession.Model = "text-davinci-003"
 	currUserSession.Temperature = 0
 
-	g.Logger.Println("Reading English translator prompt file...")
-	file, err := os.ReadFile("role/boggart_prompt/en_translator")
-	if err != nil {
-		g.Logger.Println(err.Error())
-	}
-
-	currUserSession.Prompt = string(file)
+	currUserSession.Prompt = readPromptFromFile("en_translator")
 
 	g.SessionMap[userId] = currUserSession
 
-	err = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "(博格特已变成英文翻译)",
@@ -148,4 +136,13 @@ func onTranslateToEn(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	if err != nil {
 		logger.Println("Error responding to slash command: ", err)
 	}
+}
+
+func readPromptFromFile(fileName string) string {
+	g.Logger.Println("Reading English translator prompt file...")
+	file, err := os.ReadFile("role/boggart_prompt/" + fileName)
+	if err != nil {
+		g.Logger.Println(err.Error())
+	}
+	return string(file)
 }
