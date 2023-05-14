@@ -7,6 +7,7 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
 	"github.com/mglslg/gpt-play/cmd/util"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -32,6 +33,8 @@ func initDiscordSession() (*discordgo.Session, error) {
 		createCmd(session, "英文翻译", "将其它语言翻译成英文")
 		createCmd(session, "中文翻译", "将其它语言翻译成中文")
 		session.AddHandler(onBoggartSlashCmd)
+	} else if g.Role.Name == "Maainong" {
+		//todo 暂时没有可执行的命令
 	} else {
 		createCmd(session, "一忘皆空", "清除与"+g.Role.Name+"的聊天上下文")
 		session.AddHandler(doForgetAllCmd)
@@ -240,7 +243,20 @@ func callOpenAI(msgStack *ds.Stack, currUser string, currUserId string, resultCh
 		return
 	}
 
-	//纯工具机器人
+	//翻译机器人
+	if g.Role.Name == "Maainong" {
+		g.Logger.Println("Reading English translator prompt file...")
+		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
+		if err != nil {
+			g.Logger.Println(err.Error())
+		}
+		translatorPrompt := string(file)
+		lastMsg, _ := msgStack.GetBottomElement()
+		resultChannel <- completeStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, "text-davinci-003", currUser)
+		return
+	}
+
+	//Boggart纯工具机器人
 	currSession, exists := g.SessionMap[currUserId]
 	if exists && currSession.Model == "text-davinci-003" {
 		lastMsg, _ := msgStack.GetBottomElement()
