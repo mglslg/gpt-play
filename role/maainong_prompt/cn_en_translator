@@ -1,4 +1,4 @@
-Translate the text delimited by triple backticks.If the text is Chinese then translate it into English;If the text is English then translate it into Chinese;If the text is neither Chinese nor English then translate it into Chinese.  If the text is a single word,display its English phonetic symbols,and make an example sentence with this English word.
+Translate the text delimited by triple backticks.If the text is Chinese then translate it into English;If the text is English then translate it into Chinese. If the text is a single word,display its English phonetic symbols,and make an example sentence with this English word.
 
 ##
 Text1:```car```
