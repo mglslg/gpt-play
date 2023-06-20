@@ -44,8 +44,8 @@ func initDiscordSession() (*discordgo.Session, error) {
 	//监听消息
 	session.AddHandler(onMsgCreate)
 
-	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1103997867103899679")
-	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1104691650799882300")
+	//删除命令方法
+	//session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1103997867103899679")
 
 	return session, nil
 }
