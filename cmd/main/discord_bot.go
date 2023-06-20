@@ -30,8 +30,9 @@ func initDiscordSession() (*discordgo.Session, error) {
 		createCmd(session, "python专家", "解答各类python相关问题")
 		createCmd(session, "golang专家", "解答各类golang相关问题")
 		createCmd(session, "java专家", "解答各类java相关问题")
-		createCmd(session, "英文翻译", "将其它语言翻译成英文")
-		createCmd(session, "中文翻译", "将其它语言翻译成中文")
+		createCmd(session, "linux专家", "解答各类linux相关问题")
+		//createCmd(session, "英文翻译", "将其它语言翻译成英文")
+		//createCmd(session, "中文翻译", "将其它语言翻译成中文")
 		session.AddHandler(onBoggartSlashCmd)
 	} else if g.Role.Name == "Maainong" {
 		//todo 暂时没有可执行的命令
@@ -43,7 +44,8 @@ func initDiscordSession() (*discordgo.Session, error) {
 	//监听消息
 	session.AddHandler(onMsgCreate)
 
-	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1103997865866567741")
+	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1103997867103899679")
+	session.ApplicationCommandDelete(g.Role.ApplicationId, g.Conf.GuildID, "1104691650799882300")
 
 	return session, nil
 }

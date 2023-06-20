@@ -27,17 +27,17 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 
 	}
 	if i.ApplicationCommandData().Name == "linux专家" {
-
+		onLinuxExpertCmd(s, i)
 	}
 	if i.ApplicationCommandData().Name == "网络专家" {
 
 	}
-	if i.ApplicationCommandData().Name == "英文翻译" {
-		onTranslateToEn(s, i)
-	}
-	if i.ApplicationCommandData().Name == "中文翻译" {
-		onTranslateToCn(s, i)
-	}
+	//if i.ApplicationCommandData().Name == "英文翻译" {
+	//	onTranslateToEn(s, i)
+	//}
+	//if i.ApplicationCommandData().Name == "中文翻译" {
+	//	onTranslateToCn(s, i)
+	//}
 	if i.ApplicationCommandData().Name == "自定义prompt" {
 
 	}
@@ -89,6 +89,22 @@ func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
 			Content: "(博格特已变成java专家)",
+		},
+	})
+	if err != nil {
+		logger.Println("Error responding to slash command: ", err)
+	}
+}
+
+func onLinuxExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+
+	g.Role.Characters[0].Desc = readPromptFromFile("linux_expert")
+
+	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseChannelMessageWithSource,
+		Data: &discordgo.InteractionResponseData{
+			Content: "(博格特已变成linux专家)",
 		},
 	})
 	if err != nil {
