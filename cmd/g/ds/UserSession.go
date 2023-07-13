@@ -8,4 +8,5 @@ type UserSession struct {
 	Model          string  `json:"model"`
 	Temperature    float64 `json:"temperature"`
 	Prompt         string  `json:"prompt"`
+	ChannelID      string  `json:"channelId"`
 }

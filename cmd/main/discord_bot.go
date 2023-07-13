@@ -311,7 +311,7 @@ func fullChatStrategy(messages []ds.ChatMessage, currUser string) (resp string) 
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
 	logger.Println("================================")
-	result, _ := gpt_sdk.Chat(messages, 0.7)
+	result, _ := gpt_sdk.Chat3(messages, 0.7)
 	return result
 }
 
@@ -330,7 +330,7 @@ func abstractChatStrategy(messages []ds.ChatMessage, currUser string) (resp stri
 		Role:    "user",
 		Content: "尽量详细的概括上述聊天内容",
 	}
-	abstract, _ := gpt_sdk.Chat(messages, 0)
+	abstract, _ := gpt_sdk.Chat3(messages, 0)
 	abstractMsg := make([]ds.ChatMessage, 0)
 
 	//人设
@@ -354,7 +354,7 @@ func abstractChatStrategy(messages []ds.ChatMessage, currUser string) (resp stri
 	}
 	logger.Println("================================")
 
-	result, _ := gpt_sdk.Chat(abstractMsg, 0.7)
+	result, _ := gpt_sdk.Chat3(abstractMsg, 0.7)
 	return result
 }
 

@@ -10,10 +10,19 @@ import (
 	"net/http"
 )
 
-func Chat(msg []ds.ChatMessage, temperature float64) (string, error) {
+func Chat3(msg []ds.ChatMessage, temperature float64) (string, error) {
+	return Chat(msg, temperature, "gpt-3.5-turbo")
+}
+
+func Chat4(msg []ds.ChatMessage, temperature float64) (string, error) {
+	return Chat(msg, temperature, "gpt-4")
+}
+
+// todo 最终还是要使用这个,model从跟外面的session传入进来
+func Chat(msg []ds.ChatMessage, temperature float64, model string) (string, error) {
 	api := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
-		"model":       "gpt-3.5-turbo",
+		"model":       model,
 		"messages":    msg,
 		"temperature": temperature,
 	}
