@@ -16,7 +16,7 @@ var Conf ds.GlobalConfig
 var SecToken ds.Token
 var Role ds.Role
 var PrivateChatAuth ds.PrivateChatAuth
-var SessionMap map[string]ds.UserSession
+var SessionMap map[string]*ds.UserSession
 
 // InitConfig readConfig reads the config file and unmarshals it into the config variable
 func InitConfig(configPath string) {
@@ -104,28 +104,26 @@ func InitPrivateChatAuth() {
 }
 
 func InitSessionMap() {
-	SessionMap = make(map[string]ds.UserSession)
+	SessionMap = make(map[string]*ds.UserSession)
 }
 
-// CreateUserSessionIfNotExist 为当前用户创建session
-func CreateUserSessionIfNotExist(authorId string, authorName string) {
+// GetUserSession 获取当前用户session,如果没有则创建
+func GetUserSession(authorId string, authorName string) *ds.UserSession {
 	_, exists := SessionMap[authorId]
 	if !exists {
-		SessionMap[authorId] = ds.UserSession{
-			UserId:         authorId,
-			UserName:       authorName,
-			Prompt:         Role.Characters[0].Desc,
-			ClearDelimiter: Role.ClearDelimiter,
-		}
+		SessionMap[authorId] = newUserSession(authorId, authorName)
 	}
+	return SessionMap[authorId]
 }
 
-// ResetUserSession 重置当前用户session
-func ResetUserSession(authorId string, authorName string) {
-	SessionMap[authorId] = ds.UserSession{
-		UserId:         authorId,
-		UserName:       authorName,
-		Prompt:         Role.Characters[0].Desc,
-		ClearDelimiter: Role.ClearDelimiter,
+func newUserSession(authorId string, authorName string) *ds.UserSession {
+	return &ds.UserSession{
+		UserId:          authorId,
+		UserName:        authorName,
+		ClearDelimiter:  Role.ClearDelimiter,
+		Model:           "gpt-3.5-turbo",
+		Temperature:     0.7,
+		Prompt:          Role.Characters[0].Desc,
+		AllowChannelIds: Role.ChannelIds,
 	}
 }

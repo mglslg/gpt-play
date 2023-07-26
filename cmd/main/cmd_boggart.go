@@ -3,41 +3,32 @@ package main
 import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/mglslg/gpt-play/cmd/g"
+	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"os"
 )
 
 func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	//为当前用户创建session
-	g.CreateUserSessionIfNotExist(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+	//为当前用户创建session(用户执行命令时可能早于消息监听事件,因此此处也要判断session并创建)
+	us := g.GetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
 
 	if i.ApplicationCommandData().Name == "滑稽滑稽" {
-		g.Role.Characters[0].Desc = "You are now playing a Boggart from J.K. Rowling's novel 'Harry Potter'.You are a creature beyond life and death in the magical world. You have the ability to transform into any existing creature or object in the magical world, specifically to scare the wizards in front of you by becoming the people or creatures they fear the most. Now, no matter what the user asks you, DO NOT ANSWER!!! Just describe a transformation scene as terrifying as possible.Vividly describe the terrifying transformation scene in no less than 25 words.Show the description of the scene in parentheses(without other description).Describe in third person narration instead of first person narration.Think in English and reply in Simplified Chinese."
-		doForgetAllCmd(s, i)
+		doForgetAllCmd(s, i, us)
 	}
 	if i.ApplicationCommandData().Name == "python专家" {
-		onPythonExpertCmd(s, i)
+		onPythonExpertCmd(s, i, us)
 	}
 	if i.ApplicationCommandData().Name == "golang专家" {
-		onGolangExpertCmd(s, i)
+		onGolangExpertCmd(s, i, us)
 	}
 	if i.ApplicationCommandData().Name == "java专家" {
-		onJavaExpertCmd(s, i)
-	}
-	if i.ApplicationCommandData().Name == "node专家" {
-
+		onJavaExpertCmd(s, i, us)
 	}
 	if i.ApplicationCommandData().Name == "linux专家" {
-		onLinuxExpertCmd(s, i)
+		onLinuxExpertCmd(s, i, us)
 	}
 	if i.ApplicationCommandData().Name == "网络专家" {
 
 	}
-	//if i.ApplicationCommandData().Name == "英文翻译" {
-	//	onTranslateToEn(s, i)
-	//}
-	//if i.ApplicationCommandData().Name == "中文翻译" {
-	//	onTranslateToCn(s, i)
-	//}
 	if i.ApplicationCommandData().Name == "自定义prompt" {
 
 	}
@@ -48,15 +39,14 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func onPythonExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-
-	g.Role.Characters[0].Desc = readPromptFromFile("python_expert")
+func onPythonExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *ds.UserSession) {
+	us.Prompt = readPromptFromFile("python_expert")
+	us.ClearDelimiter = "(博格特已变成python专家)"
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成python专家)",
+			Content: us.ClearDelimiter,
 		},
 	})
 	if err != nil {
@@ -64,15 +54,14 @@ func onPythonExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-
-	g.Role.Characters[0].Desc = readPromptFromFile("golang_expert")
+func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *ds.UserSession) {
+	us.Prompt = readPromptFromFile("golang_expert")
+	us.ClearDelimiter = "(博格特已变成golang专家)"
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成golang专家)",
+			Content: us.ClearDelimiter,
 		},
 	})
 	if err != nil {
@@ -80,15 +69,14 @@ func onGolangExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-
-	g.Role.Characters[0].Desc = readPromptFromFile("java_expert")
+func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *ds.UserSession) {
+	us.Prompt = readPromptFromFile("java_expert")
+	us.ClearDelimiter = "(博格特已变成java专家)"
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成java专家)",
+			Content: us.ClearDelimiter,
 		},
 	})
 	if err != nil {
@@ -96,57 +84,14 @@ func onJavaExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	}
 }
 
-func onLinuxExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	g.ResetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
-
-	g.Role.Characters[0].Desc = readPromptFromFile("linux_expert")
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成linux专家)",
-		},
-	})
-	if err != nil {
-		logger.Println("Error responding to slash command: ", err)
-	}
-}
-
-func onTranslateToCn(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	userId := i.Interaction.Member.User.ID
-	currUserSession := g.SessionMap[userId]
-	currUserSession.Model = "text-davinci-003"
-	currUserSession.Temperature = 0
-
-	currUserSession.Prompt = readPromptFromFile("cn_translator")
-
-	g.SessionMap[userId] = currUserSession
+func onLinuxExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *ds.UserSession) {
+	us.Prompt = readPromptFromFile("linux_expert")
+	us.ClearDelimiter = "(博格特已变成linux专家)"
 
 	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成中文翻译,可将其它语言翻译成中文)",
-		},
-	})
-	if err != nil {
-		logger.Println("Error responding to slash command: ", err)
-	}
-}
-
-func onTranslateToEn(s *discordgo.Session, i *discordgo.InteractionCreate) {
-	userId := i.Interaction.Member.User.ID
-	currUserSession := g.SessionMap[userId]
-	currUserSession.Model = "text-davinci-003"
-	currUserSession.Temperature = 0
-
-	currUserSession.Prompt = readPromptFromFile("en_translator")
-
-	g.SessionMap[userId] = currUserSession
-
-	err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: "(博格特已变成英文翻译,可将其它语言翻译成英文)",
+			Content: us.ClearDelimiter,
 		},
 	})
 	if err != nil {

@@ -18,13 +18,12 @@ func Chat4(msg []ds.ChatMessage, temperature float64) (string, error) {
 	return Chat(msg, temperature, "gpt-4")
 }
 
-// todo 最终还是要使用这个,model从跟外面的session传入进来
-func Chat(msg []ds.ChatMessage, temperature float64, model string) (string, error) {
+func Chat(msg []ds.ChatMessage, us *ds.UserSession) (string, error) {
 	api := "https://api.openai.com/v1/chat/completions"
 	payload := map[string]interface{}{
-		"model":       model,
+		"model":       us.Model,
 		"messages":    msg,
-		"temperature": temperature,
+		"temperature": us.Temperature,
 	}
 
 	body, err := json.Marshal(payload)
@@ -69,18 +68,14 @@ func Chat(msg []ds.ChatMessage, temperature float64, model string) (string, erro
 	return chatGptResponse.Choices[0].Message.Content, nil
 }
 
-func Complete(prompt string, message string, temperature int, model string) (string, error) {
-	if model == "" {
-		model = "text-davinci-003"
-	}
-
+func Complete(prompt string, message string) (string, error) {
 	prompt = prompt + "```" + message + "```"
 
 	api := "https://api.openai.com/v1/completions"
 	payload := map[string]interface{}{
-		"model":       model,
+		"model":       "text-davinci-003",
 		"prompt":      prompt,
-		"temperature": temperature,
+		"temperature": 0.0,
 		"max_tokens":  2048,
 		"n":           1,
 	}
