@@ -68,7 +68,9 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//为当前用户创建session(机器人本身也会有用户session)
+	logger.Println("Harry>>>>>", m.Author.ID, m.ChannelID)
 	us := g.GetUserSession(m.Author.ID, m.ChannelID, m.Author.Username)
+	logger.Println("Harry>>>>>", us.ChannelID, us.UserChannelID)
 
 	if isPrivateChat(s, us) {
 		s.ChannelMessageSend(us.ChannelID, "[私聊功能暂停使用,请到聊天室里使用机器人]")
