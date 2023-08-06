@@ -33,6 +33,8 @@ func main() {
 	if err != nil {
 		logger.Fatal("Error g discord session:", err)
 		return
+	} else {
+		logger.Println("Session init successfully")
 	}
 
 	err = session.Open()
@@ -43,7 +45,9 @@ func main() {
 
 	g.Conf.DiscordBotID = session.State.User.ID
 
+	logger.Println("Bot is now running.")
 	fmt.Println("Bot is now running. Press CTRL-C to exit.")
+
 	sc := make(chan os.Signal, 1)
 	signal.Notify(sc, syscall.SIGINT, syscall.SIGTERM, os.Interrupt, os.Kill)
 	<-sc

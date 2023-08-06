@@ -37,6 +37,7 @@ func initDiscordSession() (*discordgo.Session, error) {
 	} else if g.Role.Name == "Maainong" {
 		//todo 暂时没有可执行的命令
 	} else {
+		logger.Println("开始创建cmd监听")
 		createCmd(session, "一忘皆空", "清除与"+g.Role.Name+"的聊天上下文")
 		session.AddHandler(doForgetAllCmd)
 	}
@@ -307,7 +308,7 @@ func completionStrategy(userMessage string, prompt string, currUser string) (res
 }
 
 func fullChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp string) {
-	logger.Println("================", us.UserName, "================")
+	logger.Println("================", us.UserName, ":", us.UserChannelID, "================")
 	for _, m := range messages {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}
@@ -352,7 +353,8 @@ func abstractChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp s
 		Content: lastQuestion.Content,
 	})
 
-	logger.Println("================", us.UserName, "================")
+	logger.Println("================", us.UserName, ":", us.UserChannelID, "================")
+
 	for _, m := range abstractMsg {
 		logger.Println(m.Role, ":", getCleanMsg(m.Content))
 	}

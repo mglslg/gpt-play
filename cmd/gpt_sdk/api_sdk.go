@@ -53,6 +53,7 @@ func Chat(msg []ds.ChatMessage, us *ds.UserSession) (string, error) {
 	if len(chatGptResponse.Choices) == 0 {
 		return "[未获取到gpt响应数据]", nil
 	}
+	g.Logger.Println(">>>>>gpt模型:", us.Model)
 	g.Logger.Println(">>>>>gpt响应:", chatGptResponse.Choices[0].Message.Content)
 	g.Logger.Println(">>>>>finish原因:", chatGptResponse.Choices[0].FinishReason)
 	g.Logger.Println(">>>>>已花费token:", chatGptResponse.Usage.TotalTokens)
