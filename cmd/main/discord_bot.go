@@ -67,10 +67,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//为当前用户创建session(机器人本身也会有用户session)
-	us := g.GetUserSession(m.Author.ID, m.Author.Username)
-
-	//为userSession设置当前channelId
-	us.ChannelID = m.ChannelID
+	us := g.GetUserSession(m.Author.ID, m.ChannelID, m.Author.Username)
 
 	if isPrivateChat(s, us) {
 		s.ChannelMessageSend(us.ChannelID, "[私聊功能暂停使用,请到聊天室里使用机器人]")
@@ -124,6 +121,9 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession)
 	if e != nil {
 		logger.Fatal("抓取聊天记录失败", e)
 	}
+
+	//在这里设置prompt和delimiter
+	exeChannelStrategy(us)
 
 	//获取聊天上下文
 	conversation := geMentionContext(allMsg, us.UserId)
@@ -313,8 +313,7 @@ func fullChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp strin
 	}
 	logger.Println("================================")
 
-	//todo 根据channelId决定使用哪套模型
-	result, _ := gpt_sdk.Chat3(messages, 0.7)
+	result, _ := gpt_sdk.Chat(messages, us)
 
 	return result
 }
@@ -335,12 +334,11 @@ func abstractChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp s
 		Content: "尽量详细的概括上述聊天内容",
 	}
 
-	//todo 根据channelId决定使用哪套模型
-	abstract, _ := gpt_sdk.Chat3(messages, 0)
+	abstract, _ := gpt_sdk.Chat(messages, us)
 	abstractMsg := make([]ds.ChatMessage, 0)
 
 	//人设
-	makeSystemRole(&abstractMsg, g.Role.Characters[0].Desc)
+	makeSystemRole(&abstractMsg, us.Prompt)
 
 	//上下文的概括
 	abstractMsg = append(abstractMsg, ds.ChatMessage{
@@ -360,7 +358,7 @@ func abstractChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp s
 	}
 	logger.Println("================================")
 
-	result, _ := gpt_sdk.Chat3(abstractMsg, 0.7)
+	result, _ := gpt_sdk.Chat(abstractMsg, us)
 	return result
 }
 

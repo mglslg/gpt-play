@@ -9,7 +9,7 @@ import (
 
 func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	//为当前用户创建session(用户执行命令时可能早于消息监听事件,因此此处也要判断session并创建)
-	us := g.GetUserSession(i.Interaction.Member.User.ID, i.Interaction.Member.User.Username)
+	us := g.GetUserSession(i.Interaction.Member.User.ID, i.Interaction.ChannelID, i.Interaction.Member.User.Username)
 
 	if i.ApplicationCommandData().Name == "滑稽滑稽" {
 		doForgetAllCmd(s, i, us)

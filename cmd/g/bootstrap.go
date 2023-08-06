@@ -108,22 +108,30 @@ func InitSessionMap() {
 }
 
 // GetUserSession 获取当前用户session,如果没有则创建
-func GetUserSession(authorId string, authorName string) *ds.UserSession {
-	_, exists := SessionMap[authorId]
+func GetUserSession(authorId string, channelId string, authorName string) *ds.UserSession {
+	key := getUserChannelId(authorId, channelId)
+	_, exists := SessionMap[key]
 	if !exists {
-		SessionMap[authorId] = newUserSession(authorId, authorName)
+		SessionMap[key] = newUserSession(authorId, channelId, authorName)
 	}
-	return SessionMap[authorId]
+	return SessionMap[key]
 }
 
-func newUserSession(authorId string, authorName string) *ds.UserSession {
+func newUserSession(authorId string, channelId string, authorName string) *ds.UserSession {
+	userChannelId := getUserChannelId(authorId, channelId)
 	return &ds.UserSession{
 		UserId:          authorId,
 		UserName:        authorName,
+		UserChannelID:   userChannelId,
+		ChannelID:       channelId,
 		ClearDelimiter:  Role.ClearDelimiter,
 		Model:           "gpt-3.5-turbo",
 		Temperature:     0.7,
 		Prompt:          Role.Characters[0].Desc,
 		AllowChannelIds: Role.ChannelIds,
 	}
+}
+
+func getUserChannelId(authorId string, channelId string) string {
+	return authorId + "_" + channelId
 }
