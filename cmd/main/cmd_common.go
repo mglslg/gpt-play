@@ -8,6 +8,7 @@ import (
 
 func doForgetAllCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *ds.UserSession) {
 	//清除聊天上下文(实际上就是打印一句话,后面取聊天记录时按照它作分隔)
+	logger.Println("lalalala")
 
 	userMention := i.Member.User.Mention()
 	replyContent := fmt.Sprintf("%s %s", userMention, us.ClearDelimiter)
