@@ -12,7 +12,7 @@ func onBoggartSlashCmd(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	us := g.GetUserSession(i.Interaction.Member.User.ID, i.Interaction.ChannelID, i.Interaction.Member.User.Username)
 
 	if i.ApplicationCommandData().Name == "滑稽滑稽" {
-		doForgetAllCmd(s, i, us)
+		doForgetAllCmd(s, i)
 	}
 	if i.ApplicationCommandData().Name == "python专家" {
 		onPythonExpertCmd(s, i, us)
