@@ -6,7 +6,6 @@ import (
 	"github.com/mglslg/gpt-play/cmd/g"
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"github.com/mglslg/gpt-play/cmd/gpt_sdk"
-	"github.com/mglslg/gpt-play/cmd/util"
 	"os"
 	"regexp"
 	"strings"
@@ -70,6 +69,9 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//为当前用户创建session(机器人本身也会有用户session)
 	us := g.GetUserSession(m.Author.ID, m.ChannelID, m.Author.Username)
 
+	//在这里根据不同频道设置userSession状态
+	setChannelStatus(us)
+
 	if isPrivateChat(s, us) {
 		s.ChannelMessageSend(us.ChannelID, "[私聊功能暂停使用,请到聊天室里使用机器人]")
 		/*if util.ContainsString(us.UserId, g.PrivateChatAuth.UserIds) {
@@ -78,78 +80,94 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				replyContent := fmt.Sprintf("%s", g.Role.ClearDelimiter)
 				s.ChannelMessageSend(us.ChannelID, replyContent)
 			} else {
-				reply(s, m)
+				privateReply(s,m,us)
 			}
 		} else {
 			s.ChannelMessageSend(us.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}*/
-	} else {
-		if util.ContainsString(us.UserId, g.PrivateChatAuth.SuperUserIds) && m.Mentions != nil {
-			//超级用户,不限制频道
-			for _, mentioned := range m.Mentions {
-				if mentioned.ID == g.Conf.DiscordBotID {
-					reply(s, m, us)
-					break
-				}
+	} else if hasChannelPrivilege(us) {
+		if us.OnAt {
+			if us.OnConversation {
+				reply(s, m, us)
+			} else {
+				simpleReply(s, m, us)
 			}
-		} else if util.ContainsString(us.ChannelID, us.AllowChannelIds) && m.Mentions != nil {
-			//特定频道聊天,不限制用户
-			for _, mentioned := range m.Mentions {
-				if mentioned.ID == g.Conf.DiscordBotID {
-					reply(s, m, us)
-					break
+		}
+		if !us.OnAt && !us.OnConversation {
+			simpleReply(s, m, us)
+		}
+	}
+}
+
+// 不做上下文打包的简单回复
+func simpleReply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
+	allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
+	if e != nil {
+		logger.Fatal("抓取聊天记录失败", e)
+	}
+	//翻译机器人
+	if g.Role.Name == "Maainong" {
+		//无论何种情况这个conversation都将只有一条记录
+		var conversation *ds.Stack
+		if us.OnAt {
+			conversation = getLatestMentionContext(allMsg, us)
+		} else {
+			//获取最近一条聊天记录
+			conversation = getLatestMessage(allMsg)
+		}
+		respChannel := make(chan string)
+
+		g.Logger.Println("Reading English translator prompt file...")
+		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
+		if err != nil {
+			g.Logger.Println(err.Error())
+		}
+		translatorPrompt := string(file)
+		lastMsg, _ := conversation.GetBottomElement()
+		respChannel <- completionStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+
+		asyncResponse(s, m, us, respChannel)
+	} else {
+		//获取聊天上下文
+		conversation := getLatestMentionContext(allMsg, us)
+
+		respChannel := make(chan string)
+		go callOpenAIChat(conversation, us, respChannel)
+		asyncResponse(s, m, us, respChannel)
+	}
+}
+
+// 打包上下文并回复用户消息
+func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
+	if m.Mentions != nil {
+		for _, mentioned := range m.Mentions {
+			if mentioned.ID == g.Conf.DiscordBotID {
+				allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
+				if e != nil {
+					logger.Fatal("抓取聊天记录失败", e)
 				}
+
+				//获取聊天上下文
+				conversation := geMentionContext(allMsg, us)
+
+				//异步获取响应结果并提示[正在输入]
+				respChannel := make(chan string)
+				go callOpenAIChat(conversation, us, respChannel)
+				asyncResponse(s, m, us, respChannel)
+
+				return
 			}
 		}
 	}
 }
 
-// 检查消息是否为私聊消息
-func isPrivateChat(s *discordgo.Session, us *ds.UserSession) bool {
-	channel, err := s.Channel(us.ChannelID)
-	if err != nil {
-		logger.Fatal("Error getting channel,", err)
-	}
-	if channel.Type == discordgo.ChannelTypeDM {
-		return true
-	}
-	return false
-}
-
-// 回复用户消息
-func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
-	allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
-	if e != nil {
-		logger.Fatal("抓取聊天记录失败", e)
-	}
-
-	//在这里设置prompt和delimiter
-	exeChannelStrategy(us)
-
-	//获取聊天上下文
-	conversation := geMentionContext(allMsg, us.UserId)
-
-	if isPrivateChat(s, us) {
-		logger.Println("/******************私聊Start:", m.Author.Username, ",privateChat:", us.UserId, "******************\\")
-		conversation = getPrivateContext(allMsg)
-	}
-
-	//异步获取聊天记录并提示[正在输入]
-	rsChnl := make(chan string)
-
-	//异步调用openAI接口
-	go callOpenAI(conversation, us, rsChnl)
-
-	//异步接收接口响应
+// 异步接收接口响应并提示[正在输入]
+func asyncResponse(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession, respChannel chan string) {
 	for {
 		select {
-		case gptResp := <-rsChnl:
+		case gptResp := <-respChannel:
 			// Mention the user who asked the question
 			msgContent := fmt.Sprintf("%s %s", m.Author.Mention(), gptResp)
-
-			if isPrivateChat(s, us) {
-				msgContent = fmt.Sprintf("%s", gptResp)
-			}
 
 			//当消息超长时拆分成两段回复用户,并且不会宕机
 			var err error
@@ -166,12 +184,8 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession)
 				logger.Println("发送discord消息失败,当前消息长度:", len(msgContent), err)
 				_, err = s.ChannelMessageSend(us.ChannelID, fmt.Sprint("[发送discord消息失败,当前消息长度:", len(msgContent), "]"))
 			}
-
-			if isPrivateChat(s, us) {
-				logger.Println("\\******************私聊End:", us.UserName, ",privateChat:", us.UserId, "******************/")
-			}
-
 			return
+
 		default:
 			s.ChannelTyping(us.ChannelID)
 			time.Sleep(5 * time.Second)
@@ -189,30 +203,40 @@ func getCleanMsg(content string) string {
 	return cleanedMsg
 }
 
-func geMentionContext(messages []*discordgo.Message, currUserID string) *ds.Stack {
+func getLatestMessage(messages []*discordgo.Message) *ds.Stack {
+	msgStack := ds.NewStack()
+	length := len(messages)
+	msgStack.Push(messages[length-1])
+	return msgStack
+}
+
+func getLatestMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
-			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
-			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == currUserID) || (msg.Author.ID == currUserID && mention.ID == g.Conf.DiscordBotID) {
-				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
-				if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
-					return msgStack
-				}
+			//找出当前用户艾特机器人的最后一条记录
+			if msg.Author.ID == us.UserId && mention.ID == g.Conf.DiscordBotID {
 				msgStack.Push(msg)
+				return msgStack
 			}
 		}
 	}
 	return msgStack
 }
 
-func getPrivateContext(messages []*discordgo.Message) *ds.Stack {
+func geMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Stack {
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
-		if strings.Contains(msg.Content, g.Role.ClearDelimiter) {
-			return msgStack
+		for _, mention := range msg.Mentions {
+			//找出当前用户艾特GPT以及GPT艾特当前用户的聊天记录
+			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == us.UserId) || (msg.Author.ID == us.UserId && mention.ID == g.Conf.DiscordBotID) {
+				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
+				if strings.Contains(msg.Content, us.ClearDelimiter) {
+					return msgStack
+				}
+				msgStack.Push(msg)
+			}
 		}
-		msgStack.Push(msg)
 	}
 	return msgStack
 }
@@ -249,22 +273,9 @@ func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]
 	return messages, nil
 }
 
-func callOpenAI(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan string) {
+func callOpenAIChat(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan string) {
 	if msgStack.IsEmpty() {
 		resultChannel <- "[没有获取到任何聊天记录,无法对话]"
-		return
-	}
-
-	//翻译机器人
-	if g.Role.Name == "Maainong" {
-		g.Logger.Println("Reading English translator prompt file...")
-		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
-		if err != nil {
-			g.Logger.Println(err.Error())
-		}
-		translatorPrompt := string(file)
-		lastMsg, _ := msgStack.GetBottomElement()
-		resultChannel <- completionStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
 		return
 	}
 

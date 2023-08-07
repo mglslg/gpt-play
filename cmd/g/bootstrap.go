@@ -129,6 +129,8 @@ func newUserSession(authorId string, channelId string, authorName string) *ds.Us
 		Temperature:     0.7,
 		Prompt:          Role.Characters[0].Desc,
 		AllowChannelIds: Role.ChannelIds,
+		OnConversation:  true,
+		OnAt:            false,
 	}
 }
 

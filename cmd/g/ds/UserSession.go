@@ -10,5 +10,7 @@ type UserSession struct {
 	Model           string
 	Temperature     float64
 	Prompt          string
-	AllowChannelIds []string
+	AllowChannelIds []string //频道权限,针对非VIP用户生效
+	OnConversation  bool     //是否开启上下文
+	OnAt            bool     //是否需要AT机器人才会回复
 }
