@@ -86,7 +86,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(us.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}*/
 	} else if hasChannelPrivilege(us) {
-		g.Logger.Println("***************************OnMessage***************************")
+		g.Logger.Println("******************************************************OnMessage******************************************************")
 
 		if us.OnAt {
 			if us.OnConversation {
