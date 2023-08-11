@@ -319,7 +319,7 @@ func callOpenAIChat(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan s
 
 		role := "user"
 		g.Logger.Println("Harry>>>", us.UserId, ",", g.Conf.DiscordBotID)
-		if us.UserId == g.Conf.DiscordBotID {
+		if msg.Author.ID == g.Conf.DiscordBotID {
 			role = "assistant"
 		}
 
