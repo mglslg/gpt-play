@@ -100,7 +100,7 @@ func onLinuxExpertCmd(s *discordgo.Session, i *discordgo.InteractionCreate, us *
 }
 
 func readPromptFromFile(fileName string) string {
-	g.Logger.Println("Reading English translator prompt file...")
+	g.Logger.Println("Reading Boggart prompt file...")
 	file, err := os.ReadFile("role/boggart_prompt/" + fileName)
 	if err != nil {
 		g.Logger.Println(err.Error())
