@@ -86,7 +86,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(us.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}*/
 	} else if hasChannelPrivilege(us) {
-		g.Logger.Println("OnMessage:", us)
+		g.Logger.Println("***************************OnMessage***************************")
 
 		if us.OnAt {
 			if us.OnConversation {
@@ -272,6 +272,7 @@ func geMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Sta
 			}
 		}
 	}
+	g.Logger.Println("geMentionContext:delimiter:", us.ClearDelimiter, "context:", msgStack)
 	return msgStack
 }
 
@@ -333,7 +334,7 @@ func callOpenAIChat(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan s
 		})
 	}
 
-	//消息数大于10时使用概括策略,否则使用完整策略
+	//消息数大于20时使用概括策略,否则使用完整策略
 	if len(messages) > 20 {
 		resultChannel <- abstractChatStrategy(messages, us)
 	} else {
