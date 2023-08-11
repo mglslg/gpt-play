@@ -86,6 +86,8 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			s.ChannelMessageSend(us.ChannelID, "[您尚未开通私聊权限,请联系管理员Solongo]")
 		}*/
 	} else if hasChannelPrivilege(us) {
+		g.Logger.Println("OnMessage:", us)
+
 		if us.OnAt {
 			if us.OnConversation {
 				reply(s, m, us)
@@ -94,7 +96,6 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 		} else {
 			if us.OnConversation {
-
 				simpleReply(s, m, us)
 			} else {
 				simpleReplyOnce(s, m, us)
@@ -128,7 +129,7 @@ func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.Us
 		}
 		translatorPrompt := string(file)
 		lastMsg, _ := conversation.GetBottomElement()
-		respChannel <- completionStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+		respChannel <- callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
@@ -156,7 +157,7 @@ func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSess
 		}
 		translatorPrompt := string(file)
 		lastMsg, _ := conversation.GetBottomElement()
-		respChannel <- completionStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+		respChannel <- callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
@@ -240,6 +241,8 @@ func getLatestMessage(messages []*discordgo.Message) *ds.Stack {
 }
 
 func getLatestMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Stack {
+	g.Logger.Println("getLatestMentionContext:delimiter:", us.ClearDelimiter)
+
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
@@ -254,6 +257,8 @@ func getLatestMentionContext(messages []*discordgo.Message, us *ds.UserSession) 
 }
 
 func geMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Stack {
+	g.Logger.Println("geMentionContext:delimiter:", us.ClearDelimiter)
+
 	msgStack := ds.NewStack()
 	for _, msg := range messages {
 		for _, mention := range msg.Mentions {
@@ -336,8 +341,7 @@ func callOpenAIChat(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan s
 	}
 }
 
-func completionStrategy(userMessage string, prompt string, currUser string) (resp string) {
-	logger.Println("================CompleteStrategy:", currUser, "================")
+func callOpenAICompletion(userMessage string, prompt string, currUser string) (resp string) {
 	logger.Println("prompt:", prompt)
 	logger.Println("userMessage:", userMessage)
 
