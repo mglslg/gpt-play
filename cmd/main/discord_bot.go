@@ -90,33 +90,37 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			if us.OnConversation {
 				reply(s, m, us)
 			} else {
-				simpleReply(s, m, us)
+				replyOnce(s, m, us)
 			}
-		}
-		if !us.OnAt && !us.OnConversation {
-			simpleReply(s, m, us)
+		} else {
+			if us.OnConversation {
+
+				simpleReply(s, m, us)
+			} else {
+				simpleReplyOnce(s, m, us)
+			}
 		}
 	}
 }
 
-// 不做上下文打包的简单回复
+// 无需AT的上下文回复
 func simpleReply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
+	//todo 待实现
+}
+
+// 无需AT的单次回复
+func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
 	allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
 	if e != nil {
 		logger.Fatal("抓取聊天记录失败", e)
 	}
+
+	//获取最近一条聊天记录
+	conversation := getLatestMessage(allMsg)
+	respChannel := make(chan string)
+
 	//翻译机器人
 	if g.Role.Name == "Maainong" {
-		//无论何种情况这个conversation都将只有一条记录
-		var conversation *ds.Stack
-		if us.OnAt {
-			conversation = getLatestMentionContext(allMsg, us)
-		} else {
-			//获取最近一条聊天记录
-			conversation = getLatestMessage(allMsg)
-		}
-		respChannel := make(chan string)
-
 		g.Logger.Println("Reading English translator prompt file...")
 		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
 		if err != nil {
@@ -128,16 +132,41 @@ func simpleReply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSe
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
-		//获取聊天上下文
-		conversation := getLatestMentionContext(allMsg, us)
+		//todo 非翻译机器人以外的暂不做处理
+	}
+}
 
+// 需要AT的单次回复
+func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
+	allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
+	if e != nil {
+		logger.Fatal("抓取聊天记录失败", e)
+	}
+
+	//获取聊天上下文中的最后一条记录作为问题
+	conversation := getLatestMentionContext(allMsg, us)
+
+	//翻译机器人
+	if g.Role.Name == "Maainong" {
+		respChannel := make(chan string)
+		g.Logger.Println("Reading English translator prompt file...")
+		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
+		if err != nil {
+			g.Logger.Println(err.Error())
+		}
+		translatorPrompt := string(file)
+		lastMsg, _ := conversation.GetBottomElement()
+		respChannel <- completionStrategy(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+
+		asyncResponse(s, m, us, respChannel)
+	} else {
 		respChannel := make(chan string)
 		go callOpenAIChat(conversation, us, respChannel)
 		asyncResponse(s, m, us, respChannel)
 	}
 }
 
-// 打包上下文并回复用户消息
+// 需要AT的上下文回复
 func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
 	if m.Mentions != nil {
 		for _, mentioned := range m.Mentions {

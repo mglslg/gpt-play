@@ -130,7 +130,7 @@ func newUserSession(authorId string, channelId string, authorName string) *ds.Us
 		Prompt:          Role.Characters[0].Desc,
 		AllowChannelIds: Role.ChannelIds,
 		OnConversation:  true,
-		OnAt:            false,
+		OnAt:            true,
 	}
 }
 

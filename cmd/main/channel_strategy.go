@@ -21,7 +21,7 @@ func setChannelStatus(us *ds.UserSession) {
 	}
 }
 
-// 超级用户或特定频道才有权限触发机器人
+// 超级用户或特定频道才有权限触发机器人回复
 func hasChannelPrivilege(us *ds.UserSession) bool {
 	if util.ContainsString(us.UserId, g.PrivateChatAuth.SuperUserIds) {
 		return true

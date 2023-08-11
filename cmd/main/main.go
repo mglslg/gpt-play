@@ -14,10 +14,11 @@ var logger *log.Logger
 
 func main() {
 	var roleName string
-	flag.StringVar(&roleName, "role", "Snape", "The role of the bot")
-	//默认使用local_config.yaml
 	var configFilePath string
-	flag.StringVar(&configFilePath, "config", "config/local_config.yaml", "path to config file")
+
+	//本地调试按需修改
+	flag.StringVar(&roleName, "role", "Dobby", "The role of the bot")
+	flag.StringVar(&configFilePath, "config", "config/company_config.yaml", "path to config file")
 	flag.Parse()
 
 	g.InitConfig(configFilePath)
