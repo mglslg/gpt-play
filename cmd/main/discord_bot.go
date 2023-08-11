@@ -266,13 +266,13 @@ func geMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Sta
 			if (msg.Author.ID == g.Conf.DiscordBotID && mention.ID == us.UserId) || (msg.Author.ID == us.UserId && mention.ID == g.Conf.DiscordBotID) {
 				//一旦发现clear命令的分隔符则直接终止向消息栈push,直接返回
 				if strings.Contains(msg.Content, us.ClearDelimiter) {
+					g.Logger.Println("geMentionContext:delimiter:", us.ClearDelimiter, "context:", msgStack)
 					return msgStack
 				}
 				msgStack.Push(msg)
 			}
 		}
 	}
-	g.Logger.Println("geMentionContext:delimiter:", us.ClearDelimiter, "context:", msgStack)
 	return msgStack
 }
 
