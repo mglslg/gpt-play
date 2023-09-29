@@ -106,6 +106,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 // 无需AT的上下文回复
 func simpleReply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
+	//从这里改动翻译机器人
 	//todo 待实现
 }
 
