@@ -128,7 +128,8 @@ func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.Us
 			g.Logger.Println(err.Error())
 		}
 		translatorPrompt := string(file)
-		respChannel <- callOpenAICompletion(getCleanMsg(latestMsg.Content), translatorPrompt, us.UserName)
+
+		respChannel <- callOpenAICompletion(latestMsg.Content, translatorPrompt, us.UserName)
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
@@ -285,7 +286,10 @@ func fetchLatestMessages(s *discordgo.Session, channelID string, count int) (*di
 		return messages, err
 	}
 	for _, msg := range msgs {
-		messages = msg
+		if msg.Content != "" {
+			messages = msg
+			break
+		}
 
 		// 打印附件
 		for _, attachment := range msg.Attachments {
