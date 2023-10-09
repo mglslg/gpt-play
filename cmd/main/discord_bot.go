@@ -87,6 +87,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}*/
 	} else if hasChannelPrivilege(us) {
 		g.Logger.Println("******************************************************OnMessage******************************************************")
+		g.Logger.Println("OnAt:", us.OnAt, ",OnConversation:", us.OnConversation)
 
 		if us.OnAt {
 			if us.OnConversation {
