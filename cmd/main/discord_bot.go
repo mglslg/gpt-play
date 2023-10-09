@@ -113,13 +113,11 @@ func simpleReply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSe
 
 // 无需AT的单次回复
 func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession) {
-	allMsg, e := fetchMessagesByCount(s, us.ChannelID, g.Conf.MaxUserRecord)
+	latestMsg, e := fetchLatestMessages(s, us.ChannelID, g.Conf.MaxUserRecord)
 	if e != nil {
 		logger.Fatal("抓取聊天记录失败", e)
 	}
 
-	//获取最近一条聊天记录
-	conversation := getLatestMessage(allMsg)
 	respChannel := make(chan string)
 
 	//翻译机器人
@@ -130,8 +128,7 @@ func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.Us
 			g.Logger.Println(err.Error())
 		}
 		translatorPrompt := string(file)
-		lastMsg, _ := conversation.GetBottomElement()
-		respChannel <- callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+		respChannel <- callOpenAICompletion(getCleanMsg(latestMsg.Content), translatorPrompt, us.UserName)
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
@@ -276,6 +273,36 @@ func geMentionContext(messages []*discordgo.Message, us *ds.UserSession) *ds.Sta
 		}
 	}
 	return msgStack
+}
+
+func fetchLatestMessages(s *discordgo.Session, channelID string, count int) (*discordgo.Message, error) {
+	var messages *discordgo.Message
+
+	msgs, err := s.ChannelMessages(channelID, g.Conf.MaxFetchRecord, "", "", "")
+
+	if err != nil {
+		logger.Fatal("Error fetching channel messages:", err)
+		return messages, err
+	}
+	for _, msg := range msgs {
+		messages = msg
+
+		// 打印附件
+		for _, attachment := range msg.Attachments {
+			fmt.Printf("  [Attachment] %s: %s\n", attachment.Filename, attachment.URL)
+		}
+
+		// 打印嵌入内容
+		for _, embed := range msg.Embeds {
+			fmt.Printf("  [Embed] Title: %s, Description: %s, URL: %s\n", embed.Title, embed.Description, embed.URL)
+		}
+
+		// 打印自定义表情
+		for _, reaction := range msg.Reactions {
+			fmt.Printf("  [Reaction] Emoji: %s, Count: %d\n", reaction.Emoji.Name, reaction.Count)
+		}
+	}
+	return messages, nil
 }
 
 func fetchMessagesByCount(s *discordgo.Session, channelID string, count int) ([]*discordgo.Message, error) {
