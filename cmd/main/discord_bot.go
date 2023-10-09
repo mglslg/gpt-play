@@ -129,6 +129,7 @@ func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.Us
 		}
 		translatorPrompt := string(file)
 
+		//todo 可能是这里没有加go导致的
 		respChannel <- callOpenAICompletion(latestMsg.Content, translatorPrompt, us.UserName)
 
 		asyncResponse(s, m, us, respChannel)
