@@ -12,7 +12,7 @@ func setChannelStatus(us *ds.UserSession) {
 	//gpt-4
 	if channelId == "1127815740725153812" {
 		us.Prompt = g.Role.Characters[1].Desc
-		us.Model = "gpt-4"
+		us.Model = "gpt-4-1106-preview"
 	}
 	//translate
 	if channelId == "1095947683597914162" {
