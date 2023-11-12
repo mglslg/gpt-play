@@ -72,6 +72,9 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//在这里根据不同频道设置userSession状态
 	setChannelStatus(us)
 
+	//在这里根据不同的机器人设置userSession状态
+	setRoleStatus(us)
+
 	if isPrivateChat(s, us) {
 		s.ChannelMessageSend(us.ChannelID, "[私聊功能暂停使用,请到聊天室里使用机器人]")
 		/*if util.ContainsString(us.UserId, g.PrivateChatAuth.UserIds) {
@@ -129,7 +132,7 @@ func simpleReplyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.Us
 		}
 		translatorPrompt := string(file)
 
-		go callOpenAICompletion(latestMsg.Content, translatorPrompt, us.UserName)
+		go callOpenAICompletion(latestMsg.Content, translatorPrompt, us.UserName, respChannel)
 
 		//异步获取响应结果并提示[正在输入]
 		asyncResponse(s, m, us, respChannel)
@@ -158,7 +161,7 @@ func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSess
 		}
 		translatorPrompt := string(file)
 		lastMsg, _ := conversation.GetBottomElement()
-		respChannel <- callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName)
+		go callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName, respChannel)
 
 		asyncResponse(s, m, us, respChannel)
 	} else {
@@ -376,14 +379,15 @@ func callOpenAIChat(msgStack *ds.Stack, us *ds.UserSession, resultChannel chan s
 	}
 }
 
-func callOpenAICompletion(userMessage string, prompt string, currUser string) (resp string) {
+func callOpenAICompletion(userMessage string, prompt string, currUser string, resultChannel chan string) {
 	logger.Println("prompt:", prompt)
 	logger.Println("userMessage:", userMessage)
 
 	result, _ := gpt_sdk.Complete(prompt, userMessage)
 
+	resultChannel <- result
+
 	logger.Println("================================")
-	return result
 }
 
 func fullChatStrategy(messages []ds.ChatMessage, us *ds.UserSession) (resp string) {
