@@ -153,18 +153,23 @@ func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSess
 
 	//翻译机器人
 	if g.Role.Name == "Maainong" {
-		respChannel := make(chan string)
-		g.Logger.Println("Reading English translator prompt file...")
-		file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
-		if err != nil {
-			g.Logger.Println(err.Error())
+		if m.Mentions != nil {
+			for _, mentioned := range m.Mentions {
+				if mentioned.ID == g.Conf.DiscordBotID {
+					respChannel := make(chan string)
+					g.Logger.Println("Reading English translator prompt file...")
+					file, err := os.ReadFile("role/maainong_prompt/cn_en_translator")
+					if err != nil {
+						g.Logger.Println(err.Error())
+					}
+					translatorPrompt := string(file)
+					lastMsg, _ := conversation.GetBottomElement()
+					go callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName, respChannel)
+					asyncResponse(s, m, us, respChannel)
+					return
+				}
+			}
 		}
-		translatorPrompt := string(file)
-		lastMsg, _ := conversation.GetBottomElement()
-		go callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName, respChannel)
-
-		asyncResponse(s, m, us, respChannel)
-
 	} else {
 		if m.Mentions != nil {
 			for _, mentioned := range m.Mentions {
@@ -172,11 +177,11 @@ func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSess
 					respChannel := make(chan string)
 					go callOpenAIChat(conversation, us, respChannel)
 					asyncResponse(s, m, us, respChannel)
+					return
 				}
 			}
 		}
 	}
-	return
 }
 
 // 需要AT的上下文回复
@@ -192,7 +197,7 @@ func reply(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSession)
 				//获取聊天上下文
 				conversation := geMentionContext(allMsg, us)
 
-				//异步获取响应结果并提示[正在输入]
+				//异步获取响应结果并提示[正在输入],go关键字后是生产端,asyncResponse中的select是消费端
 				respChannel := make(chan string)
 				go callOpenAIChat(conversation, us, respChannel)
 				asyncResponse(s, m, us, respChannel)
