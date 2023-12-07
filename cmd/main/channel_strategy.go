@@ -18,15 +18,7 @@ func setChannelStatus(us *ds.UserSession) {
 	if channelId == "1095947683597914162" {
 		us.OnConversation = false
 		//us.OnAt = false
-
-		//Hermione
-		if us.UserId == "1093435547160162315" {
-			us.Prompt = us.Prompt + "Translate the words or sentences inside the parentheses into English."
-		}
-		//Snape
-		if us.UserId == "1084372136812089414" {
-			us.Prompt = us.Prompt + "Translate the words or sentences inside the parentheses into Chinese."
-		}
+		us.Prompt = g.Role.Characters[2].Desc
 	}
 }
 
