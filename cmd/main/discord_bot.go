@@ -99,6 +99,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 				replyOnce(s, m, us)
 			}
 		} else {
+			//目前已经没有这种分支的情况了,都是需要AT的
 			if us.OnConversation {
 				simpleReply(s, m, us)
 			} else {
