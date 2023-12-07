@@ -164,11 +164,19 @@ func replyOnce(s *discordgo.Session, m *discordgo.MessageCreate, us *ds.UserSess
 		go callOpenAICompletion(getCleanMsg(lastMsg.Content), translatorPrompt, us.UserName, respChannel)
 
 		asyncResponse(s, m, us, respChannel)
+
 	} else {
-		respChannel := make(chan string)
-		go callOpenAIChat(conversation, us, respChannel)
-		asyncResponse(s, m, us, respChannel)
+		if m.Mentions != nil {
+			for _, mentioned := range m.Mentions {
+				if mentioned.ID == g.Conf.DiscordBotID {
+					respChannel := make(chan string)
+					go callOpenAIChat(conversation, us, respChannel)
+					asyncResponse(s, m, us, respChannel)
+				}
+			}
+		}
 	}
+	return
 }
 
 // 需要AT的上下文回复
