@@ -57,13 +57,21 @@ func InitRole(roleName string) {
 
 func InitLogger() *os.File {
 	currentDate := time.Now().Format("2006-01-02")
-	logFileName := fmt.Sprintf("%s/logs/%s.log", Conf.Home, currentDate+"-"+Role.Name)
+	logPath := fmt.Sprintf("%s/logs", Conf.Home)
+
+	// 检查logs目录是否存在，如果不存在则创建
+	if _, err := os.Stat(logPath); os.IsNotExist(err) {
+		if mkErr := os.MkdirAll(logPath, 0755); mkErr != nil {
+			log.Fatalf("Unable to create log directory: %v", mkErr)
+		}
+	}
+
+	logFileName := fmt.Sprintf("%s/%s-%s.log", logPath, currentDate, Role.Name)
 
 	// 创建一个日志文件
 	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to open log file: %v", err)
 	}
 
 	// 创建一个日志记录器
