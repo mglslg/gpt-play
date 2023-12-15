@@ -129,8 +129,8 @@ func newUserSession(authorId string, channelId string, authorName string) *ds.Us
 		Temperature:     0.7,
 		Prompt:          Role.Characters[0].Desc,
 		AllowChannelIds: Role.ChannelIds,
-		OnConversation:  true,
-		OnAt:            true,
+		OnConversation:  true, //默认都是有上下文的
+		OnAt:            true, //默认都是需要艾特才回复的
 	}
 }
 
