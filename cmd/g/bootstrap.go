@@ -57,7 +57,7 @@ func InitRole(roleName string) {
 
 func InitLogger() *os.File {
 	currentDate := time.Now().Format("2006-01-02")
-	logFileName := fmt.Sprintf("%s/deploy/logs/%s.log", Conf.Home, currentDate+"-"+Role.Name)
+	logFileName := fmt.Sprintf("%s/logs/%s.log", Conf.Home, currentDate+"-"+Role.Name)
 
 	// 创建一个日志文件
 	f, err := os.OpenFile(logFileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
