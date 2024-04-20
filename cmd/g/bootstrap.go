@@ -140,7 +140,7 @@ func newUserSession(authorId string, authorName string, channelId string, parent
 		ChannelID:       channelId,
 		ParentChannelID: parentChannelId,
 		ClearDelimiter:  Role.ClearDelimiter,
-		Model:           "gpt-3.5-turbo",
+		Model:           "gpt-3.5-turbo-0125",
 		Temperature:     0.7,
 		Prompt:          Role.Characters[0].Desc,
 		AllowChannelIds: Role.ChannelIds,

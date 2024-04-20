@@ -12,6 +12,6 @@ type CompleteBody struct {
 }
 
 var DefaultCompleteBody = CompleteBody{
-	Model:       "gpt-3.5-turbo",
+	Model:       "gpt-3.5-turbo-0125",
 	Temperature: 1,
 }
