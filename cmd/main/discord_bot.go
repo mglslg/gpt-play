@@ -67,7 +67,7 @@ func onMsgCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	}
 
 	//为当前用户创建session(机器人本身也会有用户session)
-	us := g.GetUserSession(m.Author.ID, m.ChannelID, m.Author.Username)
+	us := g.GetUserSession(m.Author.ID, m.Author.Username, m.ChannelID, s)
 
 	//在这里根据不同频道设置userSession状态
 	setChannelStatus(us)

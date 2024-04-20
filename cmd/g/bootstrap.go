@@ -3,6 +3,7 @@ package g
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bwmarrin/discordgo"
 	"github.com/mglslg/gpt-play/cmd/g/ds"
 	"gopkg.in/yaml.v3"
 	"io"
@@ -116,22 +117,28 @@ func InitSessionMap() {
 }
 
 // GetUserSession 获取当前用户session,如果没有则创建
-func GetUserSession(authorId string, channelId string, authorName string) *ds.UserSession {
+func GetUserSession(authorId string, authorName string, channelId string, s *discordgo.Session) *ds.UserSession {
+	channel, err := s.Channel(channelId)
+	if err != nil {
+		Logger.Fatal("获取频道信息失败", err)
+	}
+
 	key := getUserChannelId(authorId, channelId)
 	_, exists := SessionMap[key]
 	if !exists {
-		SessionMap[key] = newUserSession(authorId, channelId, authorName)
+		SessionMap[key] = newUserSession(authorId, authorName, channelId, channel.ParentID)
 	}
 	return SessionMap[key]
 }
 
-func newUserSession(authorId string, channelId string, authorName string) *ds.UserSession {
+func newUserSession(authorId string, authorName string, channelId string, parentChannelId string) *ds.UserSession {
 	userChannelId := getUserChannelId(authorId, channelId)
 	return &ds.UserSession{
 		UserId:          authorId,
 		UserName:        authorName,
 		UserChannelID:   userChannelId,
 		ChannelID:       channelId,
+		ParentChannelID: parentChannelId,
 		ClearDelimiter:  Role.ClearDelimiter,
 		Model:           "gpt-3.5-turbo",
 		Temperature:     0.7,

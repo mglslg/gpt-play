@@ -5,6 +5,7 @@ type UserSession struct {
 	UserChannelID   string //UserSession的唯一key
 	UserId          string
 	ChannelID       string
+	ParentChannelID string
 	UserName        string
 	ClearDelimiter  string
 	Model           string
