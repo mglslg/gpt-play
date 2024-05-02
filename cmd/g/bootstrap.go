@@ -84,17 +84,17 @@ func InitLogger() *os.File {
 func InitSecretConfig() {
 	fmt.Println("Reading secret config file...")
 
-	file, err := os.ReadFile("config/role_secrets/" + Role.Name + ".yaml")
-
-	if err != nil {
-		Logger.Fatal(err.Error())
+	discordToken := os.Getenv(Role.Name + "_DISCORD_TOKEN")
+	if discordToken == "" {
+		log.Fatal(Role.Name + "_DISCORD_TOKEN is not set")
+	}
+	openaiToken := os.Getenv("OPENAI_API_KEY")
+	if openaiToken == "" {
+		log.Fatal("OPENAI_TOKEN is not set")
 	}
 
-	err = yaml.Unmarshal(file, &SecToken)
-
-	if err != nil {
-		Logger.Fatal(err.Error())
-	}
+	SecToken.Discord = discordToken
+	SecToken.ChatGPT = openaiToken
 
 	Logger.Println("Secret Config file read successfully!Token:", SecToken.Discord)
 }
