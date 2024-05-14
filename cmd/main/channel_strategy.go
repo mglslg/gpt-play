@@ -13,12 +13,12 @@ func setChannelStatus(us *ds.UserSession) {
 	//gpt-4-channel
 	if channelId == "1127815740725153812" || parentChannelId == "1127815740725153812" {
 		us.Prompt = g.Role.Characters[1].Desc
-		us.Model = "gpt-4-turbo"
+		us.Model = "gpt-4o"
 	}
 	//gpt-4-forum
 	if channelId == "1230041826749317194" || parentChannelId == "1230041826749317194" {
 		us.Prompt = g.Role.Characters[1].Desc
-		us.Model = "gpt-4-turbo"
+		us.Model = "gpt-4o"
 	}
 
 	//translate
