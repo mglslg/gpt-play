@@ -14,6 +14,8 @@
 
 [他发在gist上的玩具代码地址](https://gist.github.com/haoel/0d5440e953743a1b359300fff408311c)
 
+---
+
 代码内容我直接贴出来：
 ```go
 // Package main
