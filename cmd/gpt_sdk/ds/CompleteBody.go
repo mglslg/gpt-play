@@ -10,8 +10,3 @@ type CompleteBody struct {
 	Temperature int              `json:"temperature"`
 	Prompt      string           `json:"prompt"`
 }
-
-var DefaultCompleteBody = CompleteBody{
-	Model:       "gpt-3.5-turbo-0125",
-	Temperature: 1,
-}
