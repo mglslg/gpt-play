@@ -12,7 +12,7 @@
 
 [皓哥写玩具时候发的推](https://x.com/haoel/status/1631909482266771456?s=46)
 
-[他发在gist上的玩具代码地址](https://gist.github.com/haoel/0d5440e953743a1b359300fff408311c)
+[皓哥gist上的玩具代码地址](https://gist.github.com/haoel/0d5440e953743a1b359300fff408311c)
 
 ---
 
