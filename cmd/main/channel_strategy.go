@@ -27,6 +27,12 @@ func setChannelStatus(us *ds.UserSession) {
 		//us.OnAt = false
 		us.Prompt = g.Role.Characters[2].Desc
 	}
+
+	//口语练习
+	if channelId == "1296051121281826849" || parentChannelId == "1296051121281826849" {
+		us.Prompt = g.Role.Characters[3].Desc
+		us.Model = "gpt-4o"
+	}
 }
 
 func setRoleStatus(us *ds.UserSession) {
